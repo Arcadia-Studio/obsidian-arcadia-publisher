@@ -1,0 +1,10 @@
+{
+	"id": "arcadia-publisher",
+	"name": "Arcadia Publisher",
+	"version": "1.0.0",
+	"minAppVersion": "0.16.0",
+	"description": "Export Obsidian notes to PDF and HTML with professional formatting. Part of the Arcadia Suite.",
+	"author": "Peter J. Carter",
+	"authorUrl": "https://theologyinfocus.org",
+	"isDesktopOnly": true
+}

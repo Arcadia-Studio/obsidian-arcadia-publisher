@@ -1,0 +1,56 @@
+/* Arcadia Publisher - Plugin Styles */
+
+/* Export Modal */
+.arcadia-publisher-modal {
+	padding: 1rem;
+}
+
+.arcadia-publisher-modal h2 {
+	margin-top: 0;
+	margin-bottom: 0.75rem;
+}
+
+.arcadia-publisher-modal-filename {
+	font-size: 1.1em;
+	font-weight: 600;
+	color: var(--text-normal);
+	margin-bottom: 1rem;
+	padding: 0.5rem 0.75rem;
+	background: var(--background-secondary);
+	border-radius: var(--radius-s);
+}
+
+.arcadia-publisher-modal-summary {
+	margin: 0.75rem 0;
+	padding: 0.5rem 0.75rem;
+	background: var(--background-secondary);
+	border-radius: var(--radius-s);
+	font-size: 0.85em;
+	color: var(--text-muted);
+}
+
+.arcadia-publisher-modal-summary p {
+	margin: 0.2rem 0;
+}
+
+.arcadia-publisher-modal-progress {
+	margin: 0.75rem 0;
+	padding: 0.5rem 0.75rem;
+	background: var(--background-modifier-info);
+	border-radius: var(--radius-s);
+	font-size: 0.9em;
+	color: var(--text-accent);
+}
+
+.arcadia-publisher-modal-buttons {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin-top: 1rem;
+	padding-top: 0.75rem;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.arcadia-publisher-modal-buttons button {
+	padding: 0.4rem 1.25rem;
+}

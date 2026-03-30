@@ -1,5 +1,7 @@
 # Arcadia Publisher
 
+![Arcadia Publisher](docs/screenshot.png)
+
 Export Obsidian notes to PDF and HTML with professional formatting, configurable templates, and one-click output from the ribbon or command palette.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)

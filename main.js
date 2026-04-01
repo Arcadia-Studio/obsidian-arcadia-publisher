@@ -88,7 +88,7 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian2.Setting(containerEl).setName("Output directory").setDesc("Folder for exported files (relative to vault root)").addText(
-      (text) => text.setPlaceholder("exports").setValue(this.plugin.settings.outputDir).onChange(async (value) => {
+      (text) => text.setPlaceholder("Exports").setValue(this.plugin.settings.outputDir).onChange(async (value) => {
         this.plugin.settings.outputDir = value.trim() || "exports";
         await this.plugin.saveSettings();
       })
@@ -118,13 +118,13 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
       })
     );
     new import_obsidian2.Setting(containerEl).setName("Page size").setDesc("Paper size for PDF export").addDropdown(
-      (dropdown) => dropdown.addOption("letter", "Letter (8.5 x 11 in)").addOption("a4", "A4 (210 x 297 mm)").setValue(this.plugin.settings.pageSize).onChange(async (value) => {
+      (dropdown) => dropdown.addOption("letter", "Letter (8.5 X 11 in)").addOption("a4", "A4 (210 X 297 mm)").setValue(this.plugin.settings.pageSize).onChange(async (value) => {
         this.plugin.settings.pageSize = value;
         await this.plugin.saveSettings();
       })
     );
     new import_obsidian2.Setting(containerEl).setName("Font family").setDesc("Primary font for exported documents").addDropdown(
-      (dropdown) => dropdown.addOption("serif", "Serif (Georgia)").addOption("sans", "Sans-serif (system UI)").addOption("mono", "Monospace (Consolas)").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
+      (dropdown) => dropdown.addOption("serif", "Serif (georgia)").addOption("sans", "Sans-serif (system UI)").addOption("mono", "Monospace (consolas)").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
         this.plugin.settings.fontFamily = value;
         await this.plugin.saveSettings();
       })
@@ -137,8 +137,8 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
       text: `License status: ${statusDesc}`,
       cls: isPro ? "mod-success" : "mod-warning"
     });
-    new import_obsidian2.Setting(containerEl).setName("License key").setDesc("Enter your premium license key from Lemon Squeezy").addText(
-      (text) => text.setPlaceholder("xxxx-xxxx-xxxx-xxxx").setValue(this.plugin.settings.licenseKey).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName("License key").setDesc("Enter your premium license key").addText(
+      (text) => text.setPlaceholder("Xxxx-xxxx-xxxx-xxxx").setValue(this.plugin.settings.licenseKey).onChange(async (value) => {
         this.plugin.settings.licenseKey = value.trim();
         await this.plugin.saveSettings();
       })

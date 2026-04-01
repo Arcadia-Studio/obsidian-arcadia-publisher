@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type ArcadiaPublisherPlugin from "./main";
-import { ArcadiaPublisherSettings } from "./types";
 import { validateLicense } from "./license";
 
 export class ArcadiaPublisherSettingTab extends PluginSettingTab {
@@ -15,7 +14,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Arcadia Publisher Settings" });
+		new Setting(containerEl).setName("Arcadia Publisher settings").setHeading();
 
 		// Output Directory
 		new Setting(containerEl)
@@ -92,7 +91,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.setDesc("Paper size for PDF export")
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("letter", "Letter (8.5 x 11)")
+					.addOption("letter", "Letter (8.5 x 11 in)")
 					.addOption("a4", "A4 (210 x 297 mm)")
 					.setValue(this.plugin.settings.pageSize)
 					.onChange(async (value) => {
@@ -118,7 +117,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			);
 
 		// Pro Section
-		containerEl.createEl("h3", { text: "Pro License" });
+		new Setting(containerEl).setName("Pro license").setHeading();
 
 		const licenseStatus = this.plugin.settings.licenseStatus;
 		const isPro = this.plugin.settings.isPro && licenseStatus?.valid;
@@ -133,7 +132,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("License key")
-			.setDesc("Enter your Arcadia Publisher Premium license key from Lemon Squeezy.")
+			.setDesc("Enter your Arcadia Publisher premium license key from Lemon Squeezy.")
 			.addText((text) =>
 				text
 					.setPlaceholder("XXXX-XXXX-XXXX-XXXX")
@@ -169,7 +168,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.addButton((btn) =>
 				btn
-					.setButtonText("Get Arcadia Publisher Premium")
+					.setButtonText("Get Arcadia Publisher premium")
 					.onClick(() => {
 						window.open("https://arcadia-studio.lemonsqueezy.com", "_blank");
 					})

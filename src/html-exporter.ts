@@ -1,4 +1,4 @@
-import { App, Notice, TFile } from "obsidian";
+import { App, TFile } from "obsidian";
 import { ArcadiaPublisherSettings, ExportResult } from "./types";
 import { MarkdownProcessor } from "./markdown-processor";
 import { getDocumentCSS, getHTMLTemplate } from "./templates";

@@ -20,7 +20,7 @@ export class ExportModal extends Modal {
 		const { contentEl } = this;
 		contentEl.addClass("arcadia-publisher-modal");
 
-		contentEl.createEl("h2", { text: "Export Note" });
+		contentEl.createEl("h2", { text: "Export note" });
 
 		// Note name display
 		contentEl.createEl("p", {
@@ -49,7 +49,7 @@ export class ExportModal extends Modal {
 			text: `Output: ${this.settings.outputDir}/`,
 		});
 		summaryEl.createEl("p", {
-			text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "Letter"}`,
+			text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "letter"}`,
 		});
 		summaryEl.createEl("p", {
 			text: `Font: ${this.settings.fontFamily}`,
@@ -62,7 +62,7 @@ export class ExportModal extends Modal {
 		const progressEl = contentEl.createDiv({
 			cls: "arcadia-publisher-modal-progress",
 		});
-		progressEl.style.display = "none";
+		progressEl.addClass("is-hidden");
 
 		// Export button
 		const buttonContainer = contentEl.createDiv({
@@ -78,33 +78,35 @@ export class ExportModal extends Modal {
 			text: "Cancel",
 		});
 
-		exportBtn.addEventListener("click", async () => {
-			if (this.exporting) return;
-			this.exporting = true;
-			exportBtn.disabled = true;
-			exportBtn.textContent = "Exporting...";
-			progressEl.style.display = "block";
-			progressEl.textContent = `Exporting to ${this.selectedFormat.toUpperCase()}...`;
+		exportBtn.addEventListener("click", () => {
+			void (async () => {
+				if (this.exporting) return;
+				this.exporting = true;
+				exportBtn.disabled = true;
+				exportBtn.textContent = "Exporting...";
+				progressEl.removeClass("is-hidden");
+				progressEl.textContent = `Exporting to ${this.selectedFormat.toUpperCase()}...`;
 
-			try {
-				const result = await this.runExport();
-				if (result.success) {
-					new Notice(
-						`Exported to ${result.outputPath}`,
-						5000
-					);
-				} else {
-					new Notice(
-						`Export failed: ${result.error}`,
-						8000
-					);
+				try {
+					const result = await this.runExport();
+					if (result.success) {
+						new Notice(
+							`Exported to ${result.outputPath}`,
+							5000
+						);
+					} else {
+						new Notice(
+							`Export failed: ${result.error}`,
+							8000
+						);
+					}
+				} catch (err) {
+					const msg = err instanceof Error ? err.message : String(err);
+					new Notice(`Export error: ${msg}`, 8000);
 				}
-			} catch (err) {
-				const msg = err instanceof Error ? err.message : String(err);
-				new Notice(`Export error: ${msg}`, 8000);
-			}
 
-			this.close();
+				this.close();
+			})();
 		});
 
 		cancelBtn.addEventListener("click", () => {

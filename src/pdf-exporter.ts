@@ -3,6 +3,20 @@ import { ArcadiaPublisherSettings, ExportResult } from "./types";
 import { MarkdownProcessor } from "./markdown-processor";
 import { getDocumentCSS, getHTMLTemplate } from "./templates";
 
+/** Minimal type for Electron BrowserWindow used in PDF rendering */
+interface ElectronBrowserWindowConstructor {
+	new (options: Record<string, unknown>): ElectronBrowserWindowInstance;
+}
+
+interface ElectronBrowserWindowInstance {
+	loadURL(url: string): void;
+	close(): void;
+	webContents: {
+		on(event: string, listener: (...args: never[]) => void): void;
+		printToPDF(options: Record<string, unknown>): Promise<Buffer>;
+	};
+}
+
 export class PDFExporter {
 	private app: App;
 	private settings: ArcadiaPublisherSettings;
@@ -70,9 +84,10 @@ export class PDFExporter {
 		pageWidthInches: number,
 		pageHeightInches: number
 	): Promise<ArrayBuffer> {
-		// Access Electron's BrowserWindow through the remote module
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		const { remote } = require("electron");
+		// Access Electron's BrowserWindow through the remote module.
+		// Electron remote is only available at runtime in Obsidian's desktop environment.
+		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Electron modules must be loaded via require() at runtime in Obsidian
+		const { remote } = require("electron") as { remote: { BrowserWindow: ElectronBrowserWindowConstructor } };
 		const { BrowserWindow } = remote;
 
 		return new Promise<ArrayBuffer>((resolve, reject) => {

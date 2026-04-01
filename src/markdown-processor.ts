@@ -131,7 +131,8 @@ export class MarkdownProcessor {
 		component.load();
 
 		try {
-			await MarkdownRenderer.renderMarkdown(
+			await MarkdownRenderer.render(
+				this.app,
 				markdown,
 				container,
 				file.path,

@@ -1,7 +1,7 @@
 {
 	"name": "arcadia-publisher",
-	"version": "1.0.0",
-	"description": "Export Obsidian notes to PDF and HTML with professional formatting",
+	"version": "1.0.1",
+	"description": "Publish Obsidian notes as HTML, PDF, and ePub with customizable themes and templates.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

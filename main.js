@@ -28,7 +28,7 @@ __export(main_exports, {
   default: () => ArcadiaPublisherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // src/types.ts
 var DEFAULT_SETTINGS = {
@@ -40,12 +40,46 @@ var DEFAULT_SETTINGS = {
   pageSize: "letter",
   fontFamily: "serif",
   licenseKey: "",
+  licenseStatus: null,
   isPro: false
 };
 
 // src/settings.ts
+var import_obsidian2 = require("obsidian");
+
+// src/license.ts
 var import_obsidian = require("obsidian");
-var ArcadiaPublisherSettingTab = class extends import_obsidian.PluginSettingTab {
+var LICENSE_CACHE_DURATION = 24 * 60 * 60 * 1e3;
+async function validateLicense(licenseKey, instanceName = "obsidian") {
+  var _a, _b, _c;
+  try {
+    const response = await (0, import_obsidian.requestUrl)({
+      url: "https://api.lemonsqueezy.com/v1/licenses/validate",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ license_key: licenseKey, instance_name: instanceName })
+    });
+    const data = response.json;
+    if (data.valid) {
+      return {
+        valid: true,
+        instanceId: (_a = data.instance) == null ? void 0 : _a.id,
+        customerEmail: (_b = data.meta) == null ? void 0 : _b.customer_email,
+        expiresAt: (_c = data.license_key) == null ? void 0 : _c.expires_at,
+        lastChecked: Date.now()
+      };
+    }
+    return { valid: false, lastChecked: Date.now() };
+  } catch (e) {
+    return { valid: false, lastChecked: Date.now() };
+  }
+}
+
+// src/settings.ts
+var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -53,67 +87,98 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian.PluginSettingTab 
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Arcadia Publisher Settings" });
-    new import_obsidian.Setting(containerEl).setName("Output directory").setDesc("Folder for exported files (relative to vault root)").addText(
+    new import_obsidian2.Setting(containerEl).setName("Arcadia Publisher settings").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Output directory").setDesc("Folder for exported files (relative to vault root)").addText(
       (text) => text.setPlaceholder("exports").setValue(this.plugin.settings.outputDir).onChange(async (value) => {
         this.plugin.settings.outputDir = value.trim() || "exports";
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Default export format").setDesc("Format used when exporting via ribbon icon or quick command").addDropdown(
+    new import_obsidian2.Setting(containerEl).setName("Default export format").setDesc("Format used when exporting via ribbon icon or quick command").addDropdown(
       (dropdown) => dropdown.addOption("pdf", "PDF").addOption("html", "HTML").setValue(this.plugin.settings.defaultFormat).onChange(async (value) => {
         this.plugin.settings.defaultFormat = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Author name").setDesc("Used in document metadata and header").addText(
+    new import_obsidian2.Setting(containerEl).setName("Author name").setDesc("Used in document metadata and header").addText(
       (text) => text.setPlaceholder("Your name").setValue(this.plugin.settings.authorName).onChange(async (value) => {
         this.plugin.settings.authorName = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Include frontmatter header").setDesc("Show title, author, and date at the top of exported documents").addToggle(
+    new import_obsidian2.Setting(containerEl).setName("Include frontmatter header").setDesc("Show title, author, and date at the top of exported documents").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.includeFrontmatter).onChange(async (value) => {
         this.plugin.settings.includeFrontmatter = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Include table of contents").setDesc("Generate a table of contents from headings").addToggle(
+    new import_obsidian2.Setting(containerEl).setName("Include table of contents").setDesc("Generate a table of contents from headings").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.includeTOC).onChange(async (value) => {
         this.plugin.settings.includeTOC = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Page size").setDesc("Paper size for PDF export").addDropdown(
-      (dropdown) => dropdown.addOption("letter", "Letter (8.5 x 11)").addOption("a4", "A4 (210 x 297 mm)").setValue(this.plugin.settings.pageSize).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName("Page size").setDesc("Paper size for PDF export").addDropdown(
+      (dropdown) => dropdown.addOption("letter", "Letter (8.5 x 11 in)").addOption("a4", "A4 (210 x 297 mm)").setValue(this.plugin.settings.pageSize).onChange(async (value) => {
         this.plugin.settings.pageSize = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Font family").setDesc("Primary font for exported documents").addDropdown(
+    new import_obsidian2.Setting(containerEl).setName("Font family").setDesc("Primary font for exported documents").addDropdown(
       (dropdown) => dropdown.addOption("serif", "Serif (Georgia)").addOption("sans", "Sans-serif (System UI)").addOption("mono", "Monospace (Consolas)").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
         this.plugin.settings.fontFamily = value;
         await this.plugin.saveSettings();
       })
     );
-    containerEl.createEl("h3", { text: "Pro License" });
-    new import_obsidian.Setting(containerEl).setName("License key").setDesc("Enter your Arcadia Publisher Pro license key (optional)").addText(
+    new import_obsidian2.Setting(containerEl).setName("Pro license").setHeading();
+    const licenseStatus = this.plugin.settings.licenseStatus;
+    const isPro = this.plugin.settings.isPro && (licenseStatus == null ? void 0 : licenseStatus.valid);
+    const statusDesc = isPro ? `Active${(licenseStatus == null ? void 0 : licenseStatus.customerEmail) ? ` (${licenseStatus.customerEmail})` : ""}${(licenseStatus == null ? void 0 : licenseStatus.expiresAt) ? ` - expires ${licenseStatus.expiresAt}` : ""}` : "No active license. Enter your license key and click Validate.";
+    const licenseStatusEl = containerEl.createEl("p", {
+      text: `License status: ${statusDesc}`,
+      cls: isPro ? "mod-success" : "mod-warning"
+    });
+    new import_obsidian2.Setting(containerEl).setName("License key").setDesc("Enter your Arcadia Publisher premium license key from Lemon Squeezy.").addText(
       (text) => text.setPlaceholder("XXXX-XXXX-XXXX-XXXX").setValue(this.plugin.settings.licenseKey).onChange(async (value) => {
         this.plugin.settings.licenseKey = value.trim();
         await this.plugin.saveSettings();
+      })
+    ).addButton(
+      (btn) => btn.setButtonText("Validate").setCta().onClick(async () => {
+        const key = this.plugin.settings.licenseKey.trim();
+        if (!key)
+          return;
+        btn.setButtonText("Checking...").setDisabled(true);
+        const status = await validateLicense(key);
+        this.plugin.settings.licenseStatus = status;
+        this.plugin.settings.isPro = status.valid;
+        await this.plugin.saveSettings();
+        btn.setButtonText("Validate").setDisabled(false);
+        if (status.valid) {
+          licenseStatusEl.textContent = `License status: Active${status.customerEmail ? ` (${status.customerEmail})` : ""}`;
+          licenseStatusEl.className = "mod-success";
+        } else {
+          licenseStatusEl.textContent = "License status: Invalid or expired. Check your key and try again.";
+          licenseStatusEl.className = "mod-warning";
+        }
+      })
+    );
+    new import_obsidian2.Setting(containerEl).addButton(
+      (btn) => btn.setButtonText("Get Arcadia Publisher premium").onClick(() => {
+        window.open("https://arcadia-studio.lemonsqueezy.com", "_blank");
       })
     );
   }
 };
 
 // src/export-modal.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/html-exporter.ts
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 
 // src/markdown-processor.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/templates.ts
 var FONT_STACKS = {
@@ -568,10 +633,11 @@ var MarkdownProcessor = class {
   }
   async renderMarkdown(markdown, file) {
     const container = document.createElement("div");
-    const component = new import_obsidian2.Component();
+    const component = new import_obsidian3.Component();
     component.load();
     try {
-      await import_obsidian2.MarkdownRenderer.renderMarkdown(
+      await import_obsidian3.MarkdownRenderer.render(
+        this.app,
         markdown,
         container,
         file.path,
@@ -721,7 +787,7 @@ var HTMLExporter = class {
       const outputName = `${file.basename}.html`;
       const outputPath = `${outputDir}/${outputName}`;
       const existingFile = this.app.vault.getAbstractFileByPath(outputPath);
-      if (existingFile instanceof import_obsidian3.TFile) {
+      if (existingFile instanceof import_obsidian4.TFile) {
         await this.app.vault.modify(existingFile, fullHTML);
       } else {
         await this.app.vault.create(outputPath, fullHTML);
@@ -752,7 +818,7 @@ var HTMLExporter = class {
 };
 
 // src/pdf-exporter.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var PDFExporter = class {
   constructor(app, settings) {
     this.app = app;
@@ -775,7 +841,7 @@ var PDFExporter = class {
       const outputName = `${file.basename}.pdf`;
       const outputPath = `${outputDir}/${outputName}`;
       const existingFile = this.app.vault.getAbstractFileByPath(outputPath);
-      if (existingFile instanceof import_obsidian4.TFile) {
+      if (existingFile instanceof import_obsidian5.TFile) {
         await this.app.vault.modifyBinary(existingFile, pdfBuffer);
       } else {
         await this.app.vault.createBinary(outputPath, pdfBuffer);
@@ -859,7 +925,7 @@ var PDFExporter = class {
 };
 
 // src/export-modal.ts
-var ExportModal = class extends import_obsidian5.Modal {
+var ExportModal = class extends import_obsidian6.Modal {
   constructor(app, file, settings) {
     super(app);
     this.exporting = false;
@@ -870,12 +936,12 @@ var ExportModal = class extends import_obsidian5.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.addClass("arcadia-publisher-modal");
-    contentEl.createEl("h2", { text: "Export Note" });
+    contentEl.createEl("h2", { text: "Export note" });
     contentEl.createEl("p", {
       text: this.file.basename,
       cls: "arcadia-publisher-modal-filename"
     });
-    new import_obsidian5.Setting(contentEl).setName("Export format").addDropdown(
+    new import_obsidian6.Setting(contentEl).setName("Export format").addDropdown(
       (dropdown) => dropdown.addOption("pdf", "PDF").addOption("html", "HTML").setValue(this.selectedFormat).onChange((value) => {
         this.selectedFormat = value;
       })
@@ -887,7 +953,7 @@ var ExportModal = class extends import_obsidian5.Modal {
       text: `Output: ${this.settings.outputDir}/`
     });
     summaryEl.createEl("p", {
-      text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "Letter"}`
+      text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "letter"}`
     });
     summaryEl.createEl("p", {
       text: `Font: ${this.settings.fontFamily}`
@@ -898,7 +964,7 @@ var ExportModal = class extends import_obsidian5.Modal {
     const progressEl = contentEl.createDiv({
       cls: "arcadia-publisher-modal-progress"
     });
-    progressEl.style.display = "none";
+    progressEl.addClass("is-hidden");
     const buttonContainer = contentEl.createDiv({
       cls: "arcadia-publisher-modal-buttons"
     });
@@ -909,32 +975,34 @@ var ExportModal = class extends import_obsidian5.Modal {
     const cancelBtn = buttonContainer.createEl("button", {
       text: "Cancel"
     });
-    exportBtn.addEventListener("click", async () => {
-      if (this.exporting)
-        return;
-      this.exporting = true;
-      exportBtn.disabled = true;
-      exportBtn.textContent = "Exporting...";
-      progressEl.style.display = "block";
-      progressEl.textContent = `Exporting to ${this.selectedFormat.toUpperCase()}...`;
-      try {
-        const result = await this.runExport();
-        if (result.success) {
-          new import_obsidian5.Notice(
-            `Exported to ${result.outputPath}`,
-            5e3
-          );
-        } else {
-          new import_obsidian5.Notice(
-            `Export failed: ${result.error}`,
-            8e3
-          );
+    exportBtn.addEventListener("click", () => {
+      void (async () => {
+        if (this.exporting)
+          return;
+        this.exporting = true;
+        exportBtn.disabled = true;
+        exportBtn.textContent = "Exporting...";
+        progressEl.removeClass("is-hidden");
+        progressEl.textContent = `Exporting to ${this.selectedFormat.toUpperCase()}...`;
+        try {
+          const result = await this.runExport();
+          if (result.success) {
+            new import_obsidian6.Notice(
+              `Exported to ${result.outputPath}`,
+              5e3
+            );
+          } else {
+            new import_obsidian6.Notice(
+              `Export failed: ${result.error}`,
+              8e3
+            );
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          new import_obsidian6.Notice(`Export error: ${msg}`, 8e3);
         }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        new import_obsidian5.Notice(`Export error: ${msg}`, 8e3);
-      }
-      this.close();
+        this.close();
+      })();
     });
     cancelBtn.addEventListener("click", () => {
       this.close();
@@ -956,7 +1024,7 @@ var ExportModal = class extends import_obsidian5.Modal {
 };
 
 // src/main.ts
-var ArcadiaPublisherPlugin = class extends import_obsidian6.Plugin {
+var ArcadiaPublisherPlugin = class extends import_obsidian7.Plugin {
   constructor() {
     super(...arguments);
     this.settings = DEFAULT_SETTINGS;
@@ -972,7 +1040,7 @@ var ArcadiaPublisherPlugin = class extends import_obsidian6.Plugin {
         if (!file || file.extension !== "md")
           return false;
         if (!checking) {
-          this.exportFile(file, "pdf");
+          void this.exportFile(file, "pdf");
         }
         return true;
       }
@@ -985,7 +1053,7 @@ var ArcadiaPublisherPlugin = class extends import_obsidian6.Plugin {
         if (!file || file.extension !== "md")
           return false;
         if (!checking) {
-          this.exportFile(file, "html");
+          void this.exportFile(file, "html");
         }
         return true;
       }
@@ -1006,7 +1074,7 @@ var ArcadiaPublisherPlugin = class extends import_obsidian6.Plugin {
     this.addRibbonIcon("file-output", "Export note", () => {
       const file = this.app.workspace.getActiveFile();
       if (!file || file.extension !== "md") {
-        new import_obsidian6.Notice("No Markdown file is active.");
+        new import_obsidian7.Notice("No Markdown file is active.");
         return;
       }
       new ExportModal(this.app, file, this.settings).open();
@@ -1021,7 +1089,7 @@ var ArcadiaPublisherPlugin = class extends import_obsidian6.Plugin {
     await this.saveData(this.settings);
   }
   async exportFile(file, format) {
-    new import_obsidian6.Notice(`Exporting ${file.basename} to ${format.toUpperCase()}...`);
+    new import_obsidian7.Notice(`Exporting ${file.basename} to ${format.toUpperCase()}...`);
     try {
       let result;
       if (format === "html") {
@@ -1032,13 +1100,13 @@ var ArcadiaPublisherPlugin = class extends import_obsidian6.Plugin {
         result = await exporter.export(file);
       }
       if (result.success) {
-        new import_obsidian6.Notice(`Exported: ${result.outputPath}`, 5e3);
+        new import_obsidian7.Notice(`Exported: ${result.outputPath}`, 5e3);
       } else {
-        new import_obsidian6.Notice(`Export failed: ${result.error}`, 8e3);
+        new import_obsidian7.Notice(`Export failed: ${result.error}`, 8e3);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      new import_obsidian6.Notice(`Export error: ${msg}`, 8e3);
+      new import_obsidian7.Notice(`Export error: ${msg}`, 8e3);
     }
   }
 };

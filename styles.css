@@ -1,5 +1,10 @@
 /* Arcadia Publisher - Plugin Styles */
 
+/* Utility: hidden toggle */
+.is-hidden {
+	display: none;
+}
+
 /* Export Modal */
 .arcadia-publisher-modal {
 	padding: 1rem;

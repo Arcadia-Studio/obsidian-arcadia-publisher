@@ -22,7 +22,7 @@ export default class ArcadiaPublisherPlugin extends Plugin {
 				const file = this.app.workspace.getActiveFile();
 				if (!file || file.extension !== "md") return false;
 				if (!checking) {
-					this.exportFile(file, "pdf");
+					void this.exportFile(file, "pdf");
 				}
 				return true;
 			},
@@ -36,7 +36,7 @@ export default class ArcadiaPublisherPlugin extends Plugin {
 				const file = this.app.workspace.getActiveFile();
 				if (!file || file.extension !== "md") return false;
 				if (!checking) {
-					this.exportFile(file, "html");
+					void this.exportFile(file, "html");
 				}
 				return true;
 			},

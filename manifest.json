@@ -1,7 +1,7 @@
 {
 	"id": "arcadia-publisher",
 	"name": "Arcadia Publisher",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"minAppVersion": "0.16.0",
 	"description": "Publish Obsidian notes as HTML, PDF, and ePub with customizable themes and templates.",
 	"author": "Peter J. Carter",

@@ -20,7 +20,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.setDesc("Folder for exported files (relative to vault root)")
 			.addText((text) =>
 				text
-					.setPlaceholder("exports")
+					.setPlaceholder("Exports")
 					.setValue(this.plugin.settings.outputDir)
 					.onChange(async (value) => {
 						this.plugin.settings.outputDir = value.trim() || "exports";
@@ -89,8 +89,8 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.setDesc("Paper size for PDF export")
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("letter", "Letter (8.5 x 11 in)")
-					.addOption("a4", "A4 (210 x 297 mm)")
+					.addOption("letter", "Letter (8.5 X 11 in)")
+					.addOption("a4", "A4 (210 X 297 mm)")
 					.setValue(this.plugin.settings.pageSize)
 					.onChange(async (value) => {
 						this.plugin.settings.pageSize = value as "letter" | "a4";
@@ -104,9 +104,9 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.setDesc("Primary font for exported documents")
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("serif", "Serif (Georgia)")
+					.addOption("serif", "Serif (georgia)")
 					.addOption("sans", "Sans-serif (system UI)")
-					.addOption("mono", "Monospace (Consolas)")
+					.addOption("mono", "Monospace (consolas)")
 					.setValue(this.plugin.settings.fontFamily)
 					.onChange(async (value) => {
 						this.plugin.settings.fontFamily = value as "serif" | "sans" | "mono";
@@ -130,10 +130,10 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("License key")
-			.setDesc("Enter your premium license key from Lemon Squeezy")
+			.setDesc("Enter your premium license key")
 			.addText((text) =>
 				text
-					.setPlaceholder("xxxx-xxxx-xxxx-xxxx")
+					.setPlaceholder("Xxxx-xxxx-xxxx-xxxx")
 					.setValue(this.plugin.settings.licenseKey)
 					.onChange(async (value) => {
 						this.plugin.settings.licenseKey = value.trim();

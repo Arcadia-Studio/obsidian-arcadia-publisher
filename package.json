@@ -1,6 +1,6 @@
 {
 	"name": "arcadia-publisher",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Publish Obsidian notes as HTML, PDF, and ePub with customizable themes and templates.",
 	"main": "main.js",
 	"scripts": {

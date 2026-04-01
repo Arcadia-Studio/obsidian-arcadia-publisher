@@ -87,7 +87,6 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian2.Setting(containerEl).setName("Arcadia Publisher settings").setHeading();
     new import_obsidian2.Setting(containerEl).setName("Output directory").setDesc("Folder for exported files (relative to vault root)").addText(
       (text) => text.setPlaceholder("exports").setValue(this.plugin.settings.outputDir).onChange(async (value) => {
         this.plugin.settings.outputDir = value.trim() || "exports";
@@ -125,7 +124,7 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
       })
     );
     new import_obsidian2.Setting(containerEl).setName("Font family").setDesc("Primary font for exported documents").addDropdown(
-      (dropdown) => dropdown.addOption("serif", "Serif (Georgia)").addOption("sans", "Sans-serif (System UI)").addOption("mono", "Monospace (Consolas)").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
+      (dropdown) => dropdown.addOption("serif", "Serif (Georgia)").addOption("sans", "Sans-serif (system UI)").addOption("mono", "Monospace (Consolas)").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
         this.plugin.settings.fontFamily = value;
         await this.plugin.saveSettings();
       })
@@ -138,8 +137,8 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
       text: `License status: ${statusDesc}`,
       cls: isPro ? "mod-success" : "mod-warning"
     });
-    new import_obsidian2.Setting(containerEl).setName("License key").setDesc("Enter your Arcadia Publisher premium license key from Lemon Squeezy.").addText(
-      (text) => text.setPlaceholder("XXXX-XXXX-XXXX-XXXX").setValue(this.plugin.settings.licenseKey).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName("License key").setDesc("Enter your premium license key from Lemon Squeezy").addText(
+      (text) => text.setPlaceholder("xxxx-xxxx-xxxx-xxxx").setValue(this.plugin.settings.licenseKey).onChange(async (value) => {
         this.plugin.settings.licenseKey = value.trim();
         await this.plugin.saveSettings();
       })
@@ -158,13 +157,13 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
           licenseStatusEl.textContent = `License status: Active${status.customerEmail ? ` (${status.customerEmail})` : ""}`;
           licenseStatusEl.className = "mod-success";
         } else {
-          licenseStatusEl.textContent = "License status: Invalid or expired. Check your key and try again.";
+          licenseStatusEl.textContent = "License status: invalid or expired. Check your key and try again.";
           licenseStatusEl.className = "mod-warning";
         }
       })
     );
     new import_obsidian2.Setting(containerEl).addButton(
-      (btn) => btn.setButtonText("Get Arcadia Publisher premium").onClick(() => {
+      (btn) => btn.setButtonText("Get premium").onClick(() => {
         window.open("https://arcadia-studio.lemonsqueezy.com", "_blank");
       })
     );

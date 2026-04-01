@@ -14,8 +14,6 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName("Arcadia Publisher settings").setHeading();
-
 		// Output Directory
 		new Setting(containerEl)
 			.setName("Output directory")
@@ -107,7 +105,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption("serif", "Serif (Georgia)")
-					.addOption("sans", "Sans-serif (System UI)")
+					.addOption("sans", "Sans-serif (system UI)")
 					.addOption("mono", "Monospace (Consolas)")
 					.setValue(this.plugin.settings.fontFamily)
 					.onChange(async (value) => {
@@ -132,10 +130,10 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("License key")
-			.setDesc("Enter your Arcadia Publisher premium license key from Lemon Squeezy.")
+			.setDesc("Enter your premium license key from Lemon Squeezy")
 			.addText((text) =>
 				text
-					.setPlaceholder("XXXX-XXXX-XXXX-XXXX")
+					.setPlaceholder("xxxx-xxxx-xxxx-xxxx")
 					.setValue(this.plugin.settings.licenseKey)
 					.onChange(async (value) => {
 						this.plugin.settings.licenseKey = value.trim();
@@ -159,7 +157,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 							licenseStatusEl.textContent = `License status: Active${status.customerEmail ? ` (${status.customerEmail})` : ""}`;
 							licenseStatusEl.className = "mod-success";
 						} else {
-							licenseStatusEl.textContent = "License status: Invalid or expired. Check your key and try again.";
+							licenseStatusEl.textContent = "License status: invalid or expired. Check your key and try again.";
 							licenseStatusEl.className = "mod-warning";
 						}
 					})
@@ -168,7 +166,7 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.addButton((btn) =>
 				btn
-					.setButtonText("Get Arcadia Publisher premium")
+					.setButtonText("Get premium")
 					.onClick(() => {
 						window.open("https://arcadia-studio.lemonsqueezy.com", "_blank");
 					})

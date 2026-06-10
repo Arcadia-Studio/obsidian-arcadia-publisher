@@ -472,7 +472,7 @@ var MarkdownProcessor = class {
     const content = await this.app.vault.read(file);
     const { frontmatter, body } = this.splitFrontmatter(content);
     const metadata = this.extractMetadata(frontmatter, file);
-    const container = document.createElement("div");
+    const container = createDiv();
     const component = new import_obsidian2.Component();
     component.load();
     try {
@@ -599,9 +599,12 @@ var MarkdownProcessor = class {
       const dataUri = await this.imageToBase64(src, contextFile);
       if (!dataUri)
         continue;
-      const img = document.createElement("img");
-      img.setAttribute("src", dataUri);
-      img.setAttribute("alt", embed.getAttribute("alt") || src);
+      const img = createEl("img", {
+        attr: {
+          src: dataUri,
+          alt: embed.getAttribute("alt") || src
+        }
+      });
       embed.replaceWith(img);
     }
   }
@@ -891,14 +894,14 @@ var PDFExporter = class {
           if (settled)
             return;
           settled = true;
-          window.clearTimeout(timeoutId);
+          activeWindow.clearTimeout(timeoutId);
           try {
             win.destroy();
           } catch (e) {
           }
           complete();
         };
-        const timeoutId = window.setTimeout(() => {
+        const timeoutId = activeWindow.setTimeout(() => {
           finish(
             () => reject(
               new Error(
@@ -908,7 +911,7 @@ var PDFExporter = class {
           );
         }, PDF_RENDER_TIMEOUT_MS);
         win.webContents.on("did-finish-load", () => {
-          window.setTimeout(() => {
+          activeWindow.setTimeout(() => {
             win.webContents.printToPDF({
               pageSize: pageSizeName,
               printBackground: true,

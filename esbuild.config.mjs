@@ -1,6 +1,16 @@
 import esbuild from "esbuild";
 import process from "process";
-import builtins from "builtin-modules";
+
+// Node built-in modules to keep external (inline list, no extra dependency)
+const builtins = [
+	"assert", "buffer", "child_process", "cluster", "console", "constants",
+	"crypto", "dgram", "dns", "domain", "events", "fs", "http", "http2",
+	"https", "inspector", "module", "net", "os", "path", "perf_hooks",
+	"process", "punycode", "querystring", "readline", "repl", "stream",
+	"string_decoder", "timers", "tls", "tty", "url", "util", "v8", "vm",
+	"worker_threads", "zlib",
+	"node:*",
+];
 
 const banner =
 `/*

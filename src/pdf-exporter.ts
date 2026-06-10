@@ -122,7 +122,7 @@ export class PDFExporter {
 				const finish = (complete: () => void) => {
 					if (settled) return;
 					settled = true;
-					window.clearTimeout(timeoutId);
+					activeWindow.clearTimeout(timeoutId);
 					try {
 						win.destroy();
 					} catch {
@@ -131,7 +131,7 @@ export class PDFExporter {
 					complete();
 				};
 
-				const timeoutId = window.setTimeout(() => {
+				const timeoutId = activeWindow.setTimeout(() => {
 					finish(() =>
 						reject(
 							new Error(
@@ -143,7 +143,7 @@ export class PDFExporter {
 
 				win.webContents.on("did-finish-load", () => {
 					// Small delay to let CSS fully render
-					window.setTimeout(() => {
+					activeWindow.setTimeout(() => {
 						win.webContents
 							.printToPDF({
 								pageSize: pageSizeName,

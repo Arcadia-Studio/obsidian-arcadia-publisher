@@ -1,6 +1,6 @@
 {
 	"name": "arcadia-publisher",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "Export Obsidian notes to PDF or HTML with embedded images, an optional table of contents, and a frontmatter title block.",
 	"main": "main.js",
 	"scripts": {
@@ -24,7 +24,6 @@
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
-		"builtin-modules": "3.3.0",
 		"esbuild": "0.17.3",
 		"eslint-plugin-obsidianmd": "^0.1.9",
 		"moment": "^2.30.1",

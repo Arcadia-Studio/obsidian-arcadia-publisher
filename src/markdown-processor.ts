@@ -21,7 +21,7 @@ export class MarkdownProcessor {
 		// Render markdown to a detached container using Obsidian's renderer.
 		// The component stays loaded until the HTML has been serialized so
 		// renderer children are not torn down early.
-		const container = document.createElement("div");
+		const container = createDiv();
 		const component = new Component();
 		component.load();
 
@@ -171,9 +171,12 @@ export class MarkdownProcessor {
 			const dataUri = await this.imageToBase64(src, contextFile);
 			if (!dataUri) continue; // not an image embed, leave as-is
 
-			const img = document.createElement("img");
-			img.setAttribute("src", dataUri);
-			img.setAttribute("alt", embed.getAttribute("alt") || src);
+			const img = createEl("img", {
+				attr: {
+					src: dataUri,
+					alt: embed.getAttribute("alt") || src,
+				},
+			});
 			embed.replaceWith(img);
 		}
 	}

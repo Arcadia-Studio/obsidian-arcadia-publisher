@@ -60,7 +60,7 @@ export default class ArcadiaPublisherPlugin extends Plugin {
 		this.addRibbonIcon("file-output", "Export note", () => {
 			const file = this.app.workspace.getActiveFile();
 			if (!file || file.extension !== "md") {
-				new Notice("No Markdown file is active.");
+				new Notice("Open a Markdown note to export it.");
 				return;
 			}
 			new ExportModal(this.app, file, this.settings).open();
@@ -68,7 +68,8 @@ export default class ArcadiaPublisherPlugin extends Plugin {
 	}
 
 	onunload(): void {
-		// Cleanup if needed
+		// Nothing to clean up: commands, ribbon icon, and the settings tab
+		// are released automatically by the plugin lifecycle.
 	}
 
 	async loadSettings(): Promise<void> {

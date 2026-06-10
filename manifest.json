@@ -1,9 +1,9 @@
 {
 	"id": "arcadia-publisher",
 	"name": "Arcadia Publisher",
-	"version": "1.0.4",
-	"minAppVersion": "0.16.0",
-	"description": "Publish notes as HTML, PDF, and ePub with customizable themes and templates.",
+	"version": "1.0.6",
+	"minAppVersion": "1.3.6",
+	"description": "Export notes to PDF or HTML with embedded images, an optional table of contents, and a frontmatter title block.",
 	"author": "Peter J. Carter",
 	"authorUrl": "https://theologyinfocus.org",
 	"isDesktopOnly": true

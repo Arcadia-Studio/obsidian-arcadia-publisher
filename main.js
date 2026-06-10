@@ -28,7 +28,7 @@ __export(main_exports, {
   default: () => ArcadiaPublisherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian7 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/types.ts
 var DEFAULT_SETTINGS = {
@@ -38,48 +38,12 @@ var DEFAULT_SETTINGS = {
   includeFrontmatter: true,
   includeTOC: false,
   pageSize: "letter",
-  fontFamily: "serif",
-  licenseKey: "",
-  licenseStatus: null,
-  isPro: false
+  fontFamily: "serif"
 };
 
 // src/settings.ts
-var import_obsidian2 = require("obsidian");
-
-// src/license.ts
 var import_obsidian = require("obsidian");
-var LICENSE_CACHE_DURATION = 24 * 60 * 60 * 1e3;
-async function validateLicense(licenseKey, instanceName = "obsidian") {
-  var _a, _b, _c;
-  try {
-    const response = await (0, import_obsidian.requestUrl)({
-      url: "https://api.lemonsqueezy.com/v1/licenses/validate",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({ license_key: licenseKey, instance_name: instanceName })
-    });
-    const data = response.json;
-    if (data.valid) {
-      return {
-        valid: true,
-        instanceId: (_a = data.instance) == null ? void 0 : _a.id,
-        customerEmail: (_b = data.meta) == null ? void 0 : _b.customer_email,
-        expiresAt: (_c = data.license_key) == null ? void 0 : _c.expires_at,
-        lastChecked: Date.now()
-      };
-    }
-    return { valid: false, lastChecked: Date.now() };
-  } catch (e) {
-    return { valid: false, lastChecked: Date.now() };
-  }
-}
-
-// src/settings.ts
-var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab {
+var ArcadiaPublisherSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -87,97 +51,60 @@ var ArcadiaPublisherSettingTab = class extends import_obsidian2.PluginSettingTab
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian2.Setting(containerEl).setName("Output directory").setDesc("Folder for exported files (relative to vault root)").addText(
-      (text) => text.setPlaceholder("Exports").setValue(this.plugin.settings.outputDir).onChange(async (value) => {
-        this.plugin.settings.outputDir = value.trim() || "exports";
+    new import_obsidian.Setting(containerEl).setName("Output directory").setDesc("Folder for exported files (relative to vault root)").addText(
+      (text) => text.setPlaceholder("exports").setValue(this.plugin.settings.outputDir).onChange(async (value) => {
+        const cleaned = value.trim().replace(/\\/g, "/");
+        this.plugin.settings.outputDir = cleaned || "exports";
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Default export format").setDesc("Format used when exporting via ribbon icon or quick command").addDropdown(
+    new import_obsidian.Setting(containerEl).setName("Default export format").setDesc("Format used when exporting via ribbon icon or quick command").addDropdown(
       (dropdown) => dropdown.addOption("pdf", "PDF").addOption("html", "HTML").setValue(this.plugin.settings.defaultFormat).onChange(async (value) => {
         this.plugin.settings.defaultFormat = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Author name").setDesc("Used in document metadata and header").addText(
+    new import_obsidian.Setting(containerEl).setName("Author name").setDesc("Used in document metadata and header").addText(
       (text) => text.setPlaceholder("Your name").setValue(this.plugin.settings.authorName).onChange(async (value) => {
         this.plugin.settings.authorName = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Include frontmatter header").setDesc("Show title, author, and date at the top of exported documents").addToggle(
+    new import_obsidian.Setting(containerEl).setName("Include frontmatter header").setDesc("Show title, author, and date at the top of exported documents").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.includeFrontmatter).onChange(async (value) => {
         this.plugin.settings.includeFrontmatter = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Include table of contents").setDesc("Generate a table of contents from headings").addToggle(
+    new import_obsidian.Setting(containerEl).setName("Include table of contents").setDesc("Generate a table of contents from headings").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.includeTOC).onChange(async (value) => {
         this.plugin.settings.includeTOC = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Page size").setDesc("Paper size for PDF export").addDropdown(
-      (dropdown) => dropdown.addOption("letter", "Letter (8.5 X 11 in)").addOption("a4", "A4 (210 X 297 mm)").setValue(this.plugin.settings.pageSize).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("Page size").setDesc("Paper size for PDF export").addDropdown(
+      (dropdown) => dropdown.addOption("letter", "Letter (8.5 x 11 in)").addOption("a4", "A4 (210 x 297 mm)").setValue(this.plugin.settings.pageSize).onChange(async (value) => {
         this.plugin.settings.pageSize = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Font family").setDesc("Primary font for exported documents").addDropdown(
-      (dropdown) => dropdown.addOption("serif", "Serif (georgia)").addOption("sans", "Sans-serif (system UI)").addOption("mono", "Monospace (consolas)").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("Font family").setDesc("Primary font for exported documents").addDropdown(
+      (dropdown) => dropdown.addOption("serif", "Serif (Georgia)").addOption("sans", "Sans-serif (system UI)").addOption("mono", "Monospace (Consolas)").setValue(this.plugin.settings.fontFamily).onChange(async (value) => {
         this.plugin.settings.fontFamily = value;
         await this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian2.Setting(containerEl).setName("Pro license").setHeading();
-    const licenseStatus = this.plugin.settings.licenseStatus;
-    const isPro = this.plugin.settings.isPro && (licenseStatus == null ? void 0 : licenseStatus.valid);
-    const statusDesc = isPro ? `Active${(licenseStatus == null ? void 0 : licenseStatus.customerEmail) ? ` (${licenseStatus.customerEmail})` : ""}${(licenseStatus == null ? void 0 : licenseStatus.expiresAt) ? ` - expires ${licenseStatus.expiresAt}` : ""}` : "No active license. Enter your license key and click Validate.";
-    const licenseStatusEl = containerEl.createEl("p", {
-      text: `License status: ${statusDesc}`,
-      cls: isPro ? "mod-success" : "mod-warning"
-    });
-    new import_obsidian2.Setting(containerEl).setName("License key").setDesc("Enter your premium license key").addText(
-      (text) => text.setPlaceholder("Xxxx-xxxx-xxxx-xxxx").setValue(this.plugin.settings.licenseKey).onChange(async (value) => {
-        this.plugin.settings.licenseKey = value.trim();
-        await this.plugin.saveSettings();
-      })
-    ).addButton(
-      (btn) => btn.setButtonText("Validate").setCta().onClick(async () => {
-        const key = this.plugin.settings.licenseKey.trim();
-        if (!key)
-          return;
-        btn.setButtonText("Checking...").setDisabled(true);
-        const status = await validateLicense(key);
-        this.plugin.settings.licenseStatus = status;
-        this.plugin.settings.isPro = status.valid;
-        await this.plugin.saveSettings();
-        btn.setButtonText("Validate").setDisabled(false);
-        if (status.valid) {
-          licenseStatusEl.textContent = `License status: Active${status.customerEmail ? ` (${status.customerEmail})` : ""}`;
-          licenseStatusEl.className = "mod-success";
-        } else {
-          licenseStatusEl.textContent = "License status: invalid or expired. Check your key and try again.";
-          licenseStatusEl.className = "mod-warning";
-        }
-      })
-    );
-    new import_obsidian2.Setting(containerEl).addButton(
-      (btn) => btn.setButtonText("Get premium").onClick(() => {
-        window.open("https://arcadia-studio.lemonsqueezy.com", "_blank");
       })
     );
   }
 };
 
 // src/export-modal.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/html-exporter.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/markdown-processor.ts
-var import_obsidian3 = require("obsidian");
+var import_obsidian2 = require("obsidian");
 
 // src/templates.ts
 var FONT_STACKS = {
@@ -535,6 +462,7 @@ function escapeHTML(str) {
 }
 
 // src/markdown-processor.ts
+var IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "avif"];
 var MarkdownProcessor = class {
   constructor(app, settings) {
     this.app = app;
@@ -544,21 +472,31 @@ var MarkdownProcessor = class {
     const content = await this.app.vault.read(file);
     const { frontmatter, body } = this.splitFrontmatter(content);
     const metadata = this.extractMetadata(frontmatter, file);
-    const renderedHTML = await this.renderMarkdown(body, file);
-    const processedHTML = await this.processImages(renderedHTML, file);
-    const parts = [];
-    if (this.settings.includeFrontmatter) {
-      parts.push(this.buildDocumentHeader(metadata));
-    }
-    if (this.settings.includeTOC) {
-      const toc = this.extractTOC(processedHTML);
-      if (toc.length > 0) {
-        parts.push(this.buildTOC(toc));
+    const container = document.createElement("div");
+    const component = new import_obsidian2.Component();
+    component.load();
+    try {
+      await import_obsidian2.MarkdownRenderer.render(
+        this.app,
+        body,
+        container,
+        file.path,
+        component
+      );
+      await this.embedImages(container, file);
+      const tocEntries = this.assignHeadingIDs(container);
+      const parts = [];
+      if (this.settings.includeFrontmatter) {
+        parts.push(this.buildDocumentHeader(metadata));
       }
+      if (this.settings.includeTOC && tocEntries.length > 0) {
+        parts.push(this.buildTOC(tocEntries));
+      }
+      parts.push(`<div class="arcadia-doc-content">${container.innerHTML}</div>`);
+      return parts.join("\n");
+    } finally {
+      component.unload();
     }
-    const contentWithIDs = this.addHeadingIDs(processedHTML);
-    parts.push(`<div class="arcadia-doc-content">${contentWithIDs}</div>`);
-    return parts.join("\n");
   }
   getMetadata(content, file) {
     const { frontmatter } = this.splitFrontmatter(content);
@@ -630,62 +568,102 @@ var MarkdownProcessor = class {
     ];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   }
-  async renderMarkdown(markdown, file) {
-    const container = document.createElement("div");
-    const component = new import_obsidian3.Component();
-    component.load();
-    try {
-      await import_obsidian3.MarkdownRenderer.render(
-        this.app,
-        markdown,
-        container,
-        file.path,
-        component
-      );
-      return container.innerHTML;
-    } finally {
-      component.unload();
-    }
-  }
-  async processImages(html, file) {
-    const imgRegex = /<img[^>]+src="([^"]*)"[^>]*>/g;
-    let result = html;
-    const matches = [...html.matchAll(imgRegex)];
-    for (const match of matches) {
-      const src = match[1];
-      if (src.startsWith("data:"))
+  /**
+   * Embed local images as base64 data URIs. Handles both markdown-style
+   * images (rendered as <img>) and wiki-style embeds (![[image.png]]),
+   * which the renderer leaves as internal-embed spans when the container
+   * is not attached to the live DOM.
+   */
+  async embedImages(container, contextFile) {
+    const images = Array.from(container.querySelectorAll("img"));
+    for (const img of images) {
+      const src = img.getAttribute("src");
+      if (!src || src.startsWith("data:"))
         continue;
       if (src.startsWith("http://") || src.startsWith("https://"))
         continue;
-      try {
-        const base64 = await this.imageToBase64(src, file);
-        if (base64) {
-          result = result.replace(match[0], match[0].replace(src, base64));
-        }
-      } catch (e) {
+      const dataUri = await this.imageToBase64(src, contextFile);
+      if (dataUri) {
+        img.setAttribute("src", dataUri);
       }
     }
-    return result;
+    const embeds = Array.from(
+      container.querySelectorAll("span.internal-embed")
+    );
+    for (const embed of embeds) {
+      if (embed.querySelector("img"))
+        continue;
+      const src = embed.getAttribute("src");
+      if (!src)
+        continue;
+      const dataUri = await this.imageToBase64(src, contextFile);
+      if (!dataUri)
+        continue;
+      const img = document.createElement("img");
+      img.setAttribute("src", dataUri);
+      img.setAttribute("alt", embed.getAttribute("alt") || src);
+      embed.replaceWith(img);
+    }
   }
   async imageToBase64(src, contextFile) {
-    const decodedSrc = decodeURIComponent(src);
-    const imageFile = this.app.metadataCache.getFirstLinkpathDest(
-      decodedSrc,
-      contextFile.path
-    );
+    const imageFile = this.resolveImageFile(src, contextFile);
     if (!imageFile)
+      return null;
+    const ext = imageFile.extension.toLowerCase();
+    if (!IMAGE_EXTENSIONS.includes(ext))
       return null;
     try {
       const arrayBuffer = await this.app.vault.readBinary(imageFile);
-      const uint8Array = new Uint8Array(arrayBuffer);
+      const bytes = new Uint8Array(arrayBuffer);
       let binary = "";
-      for (let i = 0; i < uint8Array.length; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
+      const chunkSize = 32768;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...Array.from(chunk));
       }
       const base64 = window.btoa(binary);
-      const ext = imageFile.extension.toLowerCase();
       const mimeType = this.getMimeType(ext);
       return `data:${mimeType};base64,${base64}`;
+    } catch (e) {
+      return null;
+    }
+  }
+  resolveImageFile(src, contextFile) {
+    if (src.startsWith("app://")) {
+      const rel = this.vaultPathFromResourceUrl(src);
+      if (!rel)
+        return null;
+      const file = this.app.vault.getAbstractFileByPath(rel);
+      return file instanceof import_obsidian2.TFile ? file : null;
+    }
+    let decoded = src;
+    try {
+      decoded = decodeURIComponent(src);
+    } catch (e) {
+    }
+    const dest = this.app.metadataCache.getFirstLinkpathDest(
+      decoded,
+      contextFile.path
+    );
+    if (dest)
+      return dest;
+    const byPath = this.app.vault.getAbstractFileByPath((0, import_obsidian2.normalizePath)(decoded));
+    return byPath instanceof import_obsidian2.TFile ? byPath : null;
+  }
+  vaultPathFromResourceUrl(src) {
+    try {
+      const url = new URL(src);
+      let full = decodeURIComponent(url.pathname).replace(/\\/g, "/");
+      if (full.startsWith("/"))
+        full = full.slice(1);
+      const adapter = this.app.vault.adapter;
+      if (adapter instanceof import_obsidian2.FileSystemAdapter) {
+        const base = adapter.getBasePath().replace(/\\/g, "/").replace(/\/$/, "");
+        if (full.toLowerCase().startsWith(`${base.toLowerCase()}/`)) {
+          return (0, import_obsidian2.normalizePath)(full.slice(base.length + 1));
+        }
+      }
+      return null;
     } catch (e) {
       return null;
     }
@@ -698,7 +676,8 @@ var MarkdownProcessor = class {
       gif: "image/gif",
       svg: "image/svg+xml",
       webp: "image/webp",
-      bmp: "image/bmp"
+      bmp: "image/bmp",
+      avif: "image/avif"
     };
     return types[ext] || "image/png";
   }
@@ -715,54 +694,59 @@ var MarkdownProcessor = class {
     parts.push("</div>");
     return parts.join("\n");
   }
-  extractTOC(html) {
+  /**
+   * Assign an id to every heading that lacks one and collect TOC entries.
+   * Entries always reference the actual id on the heading, so TOC links
+   * cannot drift out of sync with their targets.
+   */
+  assignHeadingIDs(container) {
     const entries = [];
-    const headingRegex = /<h([1-6])[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
-    let match;
+    const headings = Array.from(
+      container.querySelectorAll("h1, h2, h3, h4, h5, h6")
+    );
     let counter = 0;
-    while ((match = headingRegex.exec(html)) !== null) {
-      const level = parseInt(match[1]);
-      const text = match[2].replace(/<[^>]*>/g, "").trim();
-      const id = `heading-${counter++}`;
+    for (const heading of headings) {
+      const level = parseInt(heading.tagName.slice(1), 10);
+      const text = (heading.textContent || "").trim();
+      let id = heading.getAttribute("id");
+      if (!id) {
+        id = `heading-${counter++}`;
+        heading.setAttribute("id", id);
+      }
       entries.push({ level, text, id });
     }
     return entries;
   }
   buildTOC(entries) {
+    const minLevel = Math.min(...entries.map((e) => e.level));
     const parts = [];
     parts.push('<div class="arcadia-doc-toc">');
-    parts.push("  <h2>Table of Contents</h2>");
-    parts.push("  <ul>");
-    const minLevel = Math.min(...entries.map((e) => e.level));
+    parts.push("  <h2>Table of contents</h2>");
+    let html = "";
+    let prev = 0;
     for (const entry of entries) {
-      const indent = entry.level - minLevel;
-      const padding = "    ".repeat(indent);
-      if (indent > 0) {
-        parts.push(`${padding}<ul>`);
+      const level = Math.min(entry.level - minLevel + 1, prev + 1);
+      if (prev === 0) {
+        html += "<ul>";
+      } else if (level > prev) {
+        html += "<ul>";
+      } else {
+        html += "</li>";
+        for (let i = level; i < prev; i++) {
+          html += "</ul></li>";
+        }
       }
-      parts.push(
-        `${padding}<li><a href="#${entry.id}">${escapeHTML(entry.text)}</a></li>`
-      );
-      if (indent > 0) {
-        parts.push(`${padding}</ul>`);
-      }
+      html += `<li><a href="#${entry.id}">${escapeHTML(entry.text)}</a>`;
+      prev = level;
     }
-    parts.push("  </ul>");
+    html += "</li>";
+    for (let i = 1; i < prev; i++) {
+      html += "</ul></li>";
+    }
+    html += "</ul>";
+    parts.push(`  ${html}`);
     parts.push("</div>");
     return parts.join("\n");
-  }
-  addHeadingIDs(html) {
-    let counter = 0;
-    return html.replace(
-      /<h([1-6])([^>]*)>/gi,
-      (_match, level, attrs) => {
-        const id = `heading-${counter++}`;
-        if (attrs.includes("id=")) {
-          return `<h${level}${attrs}>`;
-        }
-        return `<h${level} id="${id}"${attrs}>`;
-      }
-    );
   }
 };
 
@@ -781,12 +765,12 @@ var HTMLExporter = class {
       const metadata = processor.getMetadata(rawContent, file);
       const title = metadata.title;
       const fullHTML = getHTMLTemplate(title, css, bodyContent);
-      const outputDir = this.settings.outputDir;
-      await this.ensureDirectory(outputDir);
+      const outputDir = resolveOutputDir(this.settings.outputDir);
+      await ensureDirectory(this.app, outputDir);
       const outputName = `${file.basename}.html`;
-      const outputPath = `${outputDir}/${outputName}`;
+      const outputPath = outputDir ? `${outputDir}/${outputName}` : outputName;
       const existingFile = this.app.vault.getAbstractFileByPath(outputPath);
-      if (existingFile instanceof import_obsidian4.TFile) {
+      if (existingFile instanceof import_obsidian3.TFile) {
         await this.app.vault.modify(existingFile, fullHTML);
       } else {
         await this.app.vault.create(outputPath, fullHTML);
@@ -803,21 +787,39 @@ var HTMLExporter = class {
       };
     }
   }
-  async ensureDirectory(path) {
-    const parts = path.split("/").filter((p) => p.length > 0);
-    let current = "";
-    for (const part of parts) {
-      current = current ? `${current}/${part}` : part;
-      const existing = this.app.vault.getAbstractFileByPath(current);
-      if (!existing) {
-        await this.app.vault.createFolder(current);
+};
+function resolveOutputDir(outputDir) {
+  const cleaned = (outputDir || "").trim().replace(/\\/g, "/");
+  if (!cleaned || cleaned === "/" || cleaned === ".")
+    return "exports";
+  const normalized = (0, import_obsidian3.normalizePath)(cleaned);
+  return normalized === "/" ? "" : normalized;
+}
+async function ensureDirectory(app, path) {
+  if (!path)
+    return;
+  const parts = path.split("/").filter((p) => p.length > 0);
+  let current = "";
+  for (const part of parts) {
+    current = current ? `${current}/${part}` : part;
+    const existing = app.vault.getAbstractFileByPath(current);
+    if (!existing) {
+      try {
+        await app.vault.createFolder(current);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.toLowerCase().includes("exist")) {
+          throw err;
+        }
       }
     }
   }
-};
+}
 
 // src/pdf-exporter.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian4 = require("obsidian");
+var import_url = require("url");
+var PDF_RENDER_TIMEOUT_MS = 45e3;
 var PDFExporter = class {
   constructor(app, settings) {
     this.app = app;
@@ -832,15 +834,14 @@ var PDFExporter = class {
       const metadata = processor.getMetadata(rawContent, file);
       const title = metadata.title;
       const fullHTML = getHTMLTemplate(title, css, bodyContent);
-      const pageWidth = this.settings.pageSize === "a4" ? 8.27 : 8.5;
-      const pageHeight = this.settings.pageSize === "a4" ? 11.69 : 11;
-      const pdfBuffer = await this.renderToPDF(fullHTML, pageWidth, pageHeight);
-      const outputDir = this.settings.outputDir;
-      await this.ensureDirectory(outputDir);
+      const pageSizeName = this.settings.pageSize === "a4" ? "A4" : "Letter";
+      const pdfBuffer = await this.renderToPDF(fullHTML, pageSizeName);
+      const outputDir = resolveOutputDir(this.settings.outputDir);
+      await ensureDirectory(this.app, outputDir);
       const outputName = `${file.basename}.pdf`;
-      const outputPath = `${outputDir}/${outputName}`;
+      const outputPath = outputDir ? `${outputDir}/${outputName}` : outputName;
       const existingFile = this.app.vault.getAbstractFileByPath(outputPath);
-      if (existingFile instanceof import_obsidian5.TFile) {
+      if (existingFile instanceof import_obsidian4.TFile) {
         await this.app.vault.modifyBinary(existingFile, pdfBuffer);
       } else {
         await this.app.vault.createBinary(outputPath, pdfBuffer);
@@ -857,74 +858,96 @@ var PDFExporter = class {
       };
     }
   }
-  async renderToPDF(html, pageWidthInches, pageHeightInches) {
-    const { remote } = require("electron");
-    const { BrowserWindow } = remote;
-    return new Promise((resolve, reject) => {
-      const win = new BrowserWindow({
-        show: false,
-        width: 800,
-        height: 600,
-        webPreferences: {
-          offscreen: true,
-          nodeIntegration: false
-        }
-      });
-      win.loadURL(
-        `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
-      );
-      win.webContents.on("did-finish-load", () => {
-        setTimeout(() => {
-          win.webContents.printToPDF({
-            marginsType: 0,
-            pageSize: {
-              width: pageWidthInches * 25400,
-              // convert inches to microns
-              height: pageHeightInches * 25400
-            },
-            printBackground: true,
-            printSelectionOnly: false
-          }).then((data) => {
-            win.close();
-            const arrayBuffer = data.buffer.slice(
-              data.byteOffset,
-              data.byteOffset + data.byteLength
-            );
-            resolve(arrayBuffer);
-          }).catch((err) => {
-            win.close();
-            reject(err);
-          });
-        }, 500);
-      });
-      win.webContents.on(
-        "did-fail-load",
-        (_event, errorCode, errorDescription) => {
-          win.close();
-          reject(
-            new Error(
-              `Failed to load content for PDF rendering: ${errorDescription} (${errorCode})`
+  async renderToPDF(html, pageSizeName) {
+    var _a;
+    const electron = require("electron");
+    const BrowserWindow = (_a = electron.remote) == null ? void 0 : _a.BrowserWindow;
+    if (!BrowserWindow) {
+      throw new Error("PDF rendering is only available in the Obsidian desktop app.");
+    }
+    const adapter = this.app.vault.adapter;
+    if (!(adapter instanceof import_obsidian4.FileSystemAdapter)) {
+      throw new Error("PDF export requires a vault stored on the local file system.");
+    }
+    const tmpPath = (0, import_obsidian4.normalizePath)(
+      `${this.app.vault.configDir}/arcadia-publisher-print.tmp.html`
+    );
+    await adapter.write(tmpPath, html);
+    const fileUrl = (0, import_url.pathToFileURL)(adapter.getFullPath(tmpPath)).toString();
+    try {
+      return await new Promise((resolve, reject) => {
+        const win = new BrowserWindow({
+          show: false,
+          width: 800,
+          height: 600,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true
+          }
+        });
+        let settled = false;
+        const finish = (complete) => {
+          if (settled)
+            return;
+          settled = true;
+          window.clearTimeout(timeoutId);
+          try {
+            win.destroy();
+          } catch (e) {
+          }
+          complete();
+        };
+        const timeoutId = window.setTimeout(() => {
+          finish(
+            () => reject(
+              new Error(
+                `PDF rendering timed out after ${PDF_RENDER_TIMEOUT_MS / 1e3} seconds.`
+              )
             )
           );
-        }
-      );
-    });
-  }
-  async ensureDirectory(path) {
-    const parts = path.split("/").filter((p) => p.length > 0);
-    let current = "";
-    for (const part of parts) {
-      current = current ? `${current}/${part}` : part;
-      const existing = this.app.vault.getAbstractFileByPath(current);
-      if (!existing) {
-        await this.app.vault.createFolder(current);
+        }, PDF_RENDER_TIMEOUT_MS);
+        win.webContents.on("did-finish-load", () => {
+          window.setTimeout(() => {
+            win.webContents.printToPDF({
+              pageSize: pageSizeName,
+              printBackground: true,
+              margins: { marginType: "none" },
+              preferCSSPageSize: true
+            }).then((data) => {
+              const arrayBuffer = new ArrayBuffer(data.byteLength);
+              new Uint8Array(arrayBuffer).set(data);
+              finish(() => resolve(arrayBuffer));
+            }).catch((err) => {
+              finish(() => reject(err));
+            });
+          }, 250);
+        });
+        win.webContents.on(
+          "did-fail-load",
+          (_event, errorCode, errorDescription) => {
+            finish(
+              () => reject(
+                new Error(
+                  `Failed to load content for PDF rendering: ${errorDescription} (${errorCode})`
+                )
+              )
+            );
+          }
+        );
+        win.loadURL(fileUrl);
+      });
+    } finally {
+      try {
+        await adapter.remove(tmpPath);
+      } catch (e) {
       }
     }
   }
 };
 
 // src/export-modal.ts
-var ExportModal = class extends import_obsidian6.Modal {
+var ExportModal = class extends import_obsidian5.Modal {
   constructor(app, file, settings) {
     super(app);
     this.exporting = false;
@@ -935,12 +958,12 @@ var ExportModal = class extends import_obsidian6.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.addClass("arcadia-publisher-modal");
-    contentEl.createEl("h2", { text: "Export note" });
+    this.titleEl.setText("Export note");
     contentEl.createEl("p", {
       text: this.file.basename,
       cls: "arcadia-publisher-modal-filename"
     });
-    new import_obsidian6.Setting(contentEl).setName("Export format").addDropdown(
+    new import_obsidian5.Setting(contentEl).setName("Export format").addDropdown(
       (dropdown) => dropdown.addOption("pdf", "PDF").addOption("html", "HTML").setValue(this.selectedFormat).onChange((value) => {
         this.selectedFormat = value;
       })
@@ -952,18 +975,18 @@ var ExportModal = class extends import_obsidian6.Modal {
       text: `Output: ${this.settings.outputDir}/`
     });
     summaryEl.createEl("p", {
-      text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "letter"}`
+      text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "Letter"}`
     });
     summaryEl.createEl("p", {
       text: `Font: ${this.settings.fontFamily}`
     });
     summaryEl.createEl("p", {
-      text: `TOC: ${this.settings.includeTOC ? "Yes" : "No"}`
+      text: `Table of contents: ${this.settings.includeTOC ? "yes" : "no"}`
     });
     const progressEl = contentEl.createDiv({
       cls: "arcadia-publisher-modal-progress"
     });
-    progressEl.addClass("is-hidden");
+    progressEl.addClass("arcadia-publisher-hidden");
     const buttonContainer = contentEl.createDiv({
       cls: "arcadia-publisher-modal-buttons"
     });
@@ -981,24 +1004,24 @@ var ExportModal = class extends import_obsidian6.Modal {
         this.exporting = true;
         exportBtn.disabled = true;
         exportBtn.textContent = "Exporting...";
-        progressEl.removeClass("is-hidden");
+        progressEl.removeClass("arcadia-publisher-hidden");
         progressEl.textContent = `Exporting to ${this.selectedFormat.toUpperCase()}...`;
         try {
           const result = await this.runExport();
           if (result.success) {
-            new import_obsidian6.Notice(
+            new import_obsidian5.Notice(
               `Exported to ${result.outputPath}`,
               5e3
             );
           } else {
-            new import_obsidian6.Notice(
+            new import_obsidian5.Notice(
               `Export failed: ${result.error}`,
               8e3
             );
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          new import_obsidian6.Notice(`Export error: ${msg}`, 8e3);
+          new import_obsidian5.Notice(`Export error: ${msg}`, 8e3);
         }
         this.close();
       })();
@@ -1023,7 +1046,7 @@ var ExportModal = class extends import_obsidian6.Modal {
 };
 
 // src/main.ts
-var ArcadiaPublisherPlugin = class extends import_obsidian7.Plugin {
+var ArcadiaPublisherPlugin = class extends import_obsidian6.Plugin {
   constructor() {
     super(...arguments);
     this.settings = DEFAULT_SETTINGS;
@@ -1073,7 +1096,7 @@ var ArcadiaPublisherPlugin = class extends import_obsidian7.Plugin {
     this.addRibbonIcon("file-output", "Export note", () => {
       const file = this.app.workspace.getActiveFile();
       if (!file || file.extension !== "md") {
-        new import_obsidian7.Notice("No Markdown file is active.");
+        new import_obsidian6.Notice("Open a Markdown note to export it.");
         return;
       }
       new ExportModal(this.app, file, this.settings).open();
@@ -1088,7 +1111,7 @@ var ArcadiaPublisherPlugin = class extends import_obsidian7.Plugin {
     await this.saveData(this.settings);
   }
   async exportFile(file, format) {
-    new import_obsidian7.Notice(`Exporting ${file.basename} to ${format.toUpperCase()}...`);
+    new import_obsidian6.Notice(`Exporting ${file.basename} to ${format.toUpperCase()}...`);
     try {
       let result;
       if (format === "html") {
@@ -1099,13 +1122,13 @@ var ArcadiaPublisherPlugin = class extends import_obsidian7.Plugin {
         result = await exporter.export(file);
       }
       if (result.success) {
-        new import_obsidian7.Notice(`Exported: ${result.outputPath}`, 5e3);
+        new import_obsidian6.Notice(`Exported: ${result.outputPath}`, 5e3);
       } else {
-        new import_obsidian7.Notice(`Export failed: ${result.error}`, 8e3);
+        new import_obsidian6.Notice(`Export failed: ${result.error}`, 8e3);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      new import_obsidian7.Notice(`Export error: ${msg}`, 8e3);
+      new import_obsidian6.Notice(`Export error: ${msg}`, 8e3);
     }
   }
 };

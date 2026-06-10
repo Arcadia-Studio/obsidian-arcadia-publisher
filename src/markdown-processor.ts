@@ -1,6 +1,8 @@
-import { App, Component, MarkdownRenderer, TFile } from "obsidian";
+import { App, Component, FileSystemAdapter, MarkdownRenderer, TFile, normalizePath } from "obsidian";
 import { ArcadiaPublisherSettings, DocumentMetadata, TOCEntry } from "./types";
 import { escapeHTML } from "./templates";
+
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "avif"];
 
 export class MarkdownProcessor {
 	private app: App;
@@ -16,33 +18,47 @@ export class MarkdownProcessor {
 		const { frontmatter, body } = this.splitFrontmatter(content);
 		const metadata = this.extractMetadata(frontmatter, file);
 
-		// Render markdown to HTML using Obsidian's renderer
-		const renderedHTML = await this.renderMarkdown(body, file);
+		// Render markdown to a detached container using Obsidian's renderer.
+		// The component stays loaded until the HTML has been serialized so
+		// renderer children are not torn down early.
+		const container = document.createElement("div");
+		const component = new Component();
+		component.load();
 
-		// Process images to embed as base64
-		const processedHTML = await this.processImages(renderedHTML, file);
+		try {
+			await MarkdownRenderer.render(
+				this.app,
+				body,
+				container,
+				file.path,
+				component
+			);
 
-		// Build the document body
-		const parts: string[] = [];
+			// Embed local images as base64 so the export is self-contained
+			await this.embedImages(container, file);
 
-		// Document header from frontmatter
-		if (this.settings.includeFrontmatter) {
-			parts.push(this.buildDocumentHeader(metadata));
-		}
+			// Assign heading IDs and collect TOC entries from the same pass
+			// so anchors always match their targets
+			const tocEntries = this.assignHeadingIDs(container);
 
-		// Table of contents
-		if (this.settings.includeTOC) {
-			const toc = this.extractTOC(processedHTML);
-			if (toc.length > 0) {
-				parts.push(this.buildTOC(toc));
+			const parts: string[] = [];
+
+			// Document header from frontmatter
+			if (this.settings.includeFrontmatter) {
+				parts.push(this.buildDocumentHeader(metadata));
 			}
+
+			// Table of contents
+			if (this.settings.includeTOC && tocEntries.length > 0) {
+				parts.push(this.buildTOC(tocEntries));
+			}
+
+			parts.push(`<div class="arcadia-doc-content">${container.innerHTML}</div>`);
+
+			return parts.join("\n");
+		} finally {
+			component.unload();
 		}
-
-		// Main content with heading IDs for TOC linking
-		const contentWithIDs = this.addHeadingIDs(processedHTML);
-		parts.push(`<div class="arcadia-doc-content">${contentWithIDs}</div>`);
-
-		return parts.join("\n");
 	}
 
 	getMetadata(content: string, file: TFile): DocumentMetadata {
@@ -125,71 +141,108 @@ export class MarkdownProcessor {
 		return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 	}
 
-	private async renderMarkdown(markdown: string, file: TFile): Promise<string> {
-		const container = document.createElement("div");
-		const component = new Component();
-		component.load();
+	/**
+	 * Embed local images as base64 data URIs. Handles both markdown-style
+	 * images (rendered as <img>) and wiki-style embeds (![[image.png]]),
+	 * which the renderer leaves as internal-embed spans when the container
+	 * is not attached to the live DOM.
+	 */
+	private async embedImages(container: HTMLElement, contextFile: TFile): Promise<void> {
+		const images = Array.from(container.querySelectorAll("img"));
+		for (const img of images) {
+			const src = img.getAttribute("src");
+			if (!src || src.startsWith("data:")) continue;
+			if (src.startsWith("http://") || src.startsWith("https://")) continue;
 
-		try {
-			await MarkdownRenderer.render(
-				this.app,
-				markdown,
-				container,
-				file.path,
-				component
-			);
-			return container.innerHTML;
-		} finally {
-			component.unload();
-		}
-	}
-
-	private async processImages(html: string, file: TFile): Promise<string> {
-		const imgRegex = /<img[^>]+src="([^"]*)"[^>]*>/g;
-		let result = html;
-		const matches = [...html.matchAll(imgRegex)];
-
-		for (const match of matches) {
-			const src = match[1];
-			if (src.startsWith("data:")) continue; // already base64
-			if (src.startsWith("http://") || src.startsWith("https://")) continue; // external
-
-			try {
-				const base64 = await this.imageToBase64(src, file);
-				if (base64) {
-					result = result.replace(match[0], match[0].replace(src, base64));
-				}
-			} catch {
-				// Leave the image as-is if conversion fails
+			const dataUri = await this.imageToBase64(src, contextFile);
+			if (dataUri) {
+				img.setAttribute("src", dataUri);
 			}
 		}
 
-		return result;
+		const embeds = Array.from(
+			container.querySelectorAll("span.internal-embed")
+		);
+		for (const embed of embeds) {
+			if (embed.querySelector("img")) continue; // already processed above
+			const src = embed.getAttribute("src");
+			if (!src) continue;
+
+			const dataUri = await this.imageToBase64(src, contextFile);
+			if (!dataUri) continue; // not an image embed, leave as-is
+
+			const img = document.createElement("img");
+			img.setAttribute("src", dataUri);
+			img.setAttribute("alt", embed.getAttribute("alt") || src);
+			embed.replaceWith(img);
+		}
 	}
 
 	private async imageToBase64(src: string, contextFile: TFile): Promise<string | null> {
-		// Decode URI-encoded path
-		const decodedSrc = decodeURIComponent(src);
-
-		// Try to resolve the file in the vault
-		const imageFile = this.app.metadataCache.getFirstLinkpathDest(
-			decodedSrc,
-			contextFile.path
-		);
-
+		const imageFile = this.resolveImageFile(src, contextFile);
 		if (!imageFile) return null;
+
+		const ext = imageFile.extension.toLowerCase();
+		if (!IMAGE_EXTENSIONS.includes(ext)) return null;
 
 		try {
 			const arrayBuffer = await this.app.vault.readBinary(imageFile);
-			const uint8Array = new Uint8Array(arrayBuffer);
+			const bytes = new Uint8Array(arrayBuffer);
 			let binary = "";
-			for (let i = 0; i < uint8Array.length; i++) {
-				binary += String.fromCharCode(uint8Array[i]);
+			const chunkSize = 0x8000;
+			for (let i = 0; i < bytes.length; i += chunkSize) {
+				const chunk = bytes.subarray(i, i + chunkSize);
+				binary += String.fromCharCode(...Array.from(chunk));
 			}
 			const base64 = window.btoa(binary);
-			const ext = imageFile.extension.toLowerCase();
 			const mimeType = this.getMimeType(ext);
 			return `data:${mimeType};base64,${base64}`;
+		} catch {
+			return null;
+		}
+	}
+
+	private resolveImageFile(src: string, contextFile: TFile): TFile | null {
+		// Resource URLs (app://...) point at absolute paths on disk;
+		// map them back to vault-relative paths
+		if (src.startsWith("app://")) {
+			const rel = this.vaultPathFromResourceUrl(src);
+			if (!rel) return null;
+			const file = this.app.vault.getAbstractFileByPath(rel);
+			return file instanceof TFile ? file : null;
+		}
+
+		let decoded = src;
+		try {
+			decoded = decodeURIComponent(src);
+		} catch {
+			// Keep the raw value if it is not valid percent-encoding
+		}
+
+		const dest = this.app.metadataCache.getFirstLinkpathDest(
+			decoded,
+			contextFile.path
+		);
+		if (dest) return dest;
+
+		const byPath = this.app.vault.getAbstractFileByPath(normalizePath(decoded));
+		return byPath instanceof TFile ? byPath : null;
+	}
+
+	private vaultPathFromResourceUrl(src: string): string | null {
+		try {
+			const url = new URL(src);
+			let full = decodeURIComponent(url.pathname).replace(/\\/g, "/");
+			if (full.startsWith("/")) full = full.slice(1);
+
+			const adapter = this.app.vault.adapter;
+			if (adapter instanceof FileSystemAdapter) {
+				const base = adapter.getBasePath().replace(/\\/g, "/").replace(/\/$/, "");
+				if (full.toLowerCase().startsWith(`${base.toLowerCase()}/`)) {
+					return normalizePath(full.slice(base.length + 1));
+				}
+			}
+			return null;
 		} catch {
 			return null;
 		}
@@ -204,6 +257,7 @@ export class MarkdownProcessor {
 			svg: "image/svg+xml",
 			webp: "image/webp",
 			bmp: "image/bmp",
+			avif: "image/avif",
 		};
 		return types[ext] || "image/png";
 	}
@@ -225,16 +279,26 @@ export class MarkdownProcessor {
 		return parts.join("\n");
 	}
 
-	extractTOC(html: string): TOCEntry[] {
+	/**
+	 * Assign an id to every heading that lacks one and collect TOC entries.
+	 * Entries always reference the actual id on the heading, so TOC links
+	 * cannot drift out of sync with their targets.
+	 */
+	private assignHeadingIDs(container: HTMLElement): TOCEntry[] {
 		const entries: TOCEntry[] = [];
-		const headingRegex = /<h([1-6])[^>]*>([\s\S]*?)<\/h[1-6]>/gi;
-		let match;
+		const headings = Array.from(
+			container.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6")
+		);
 		let counter = 0;
 
-		while ((match = headingRegex.exec(html)) !== null) {
-			const level = parseInt(match[1]);
-			const text = match[2].replace(/<[^>]*>/g, "").trim();
-			const id = `heading-${counter++}`;
+		for (const heading of headings) {
+			const level = parseInt(heading.tagName.slice(1), 10);
+			const text = (heading.textContent || "").trim();
+			let id = heading.getAttribute("id");
+			if (!id) {
+				id = `heading-${counter++}`;
+				heading.setAttribute("id", id);
+			}
 			entries.push({ level, text, id });
 		}
 
@@ -242,44 +306,38 @@ export class MarkdownProcessor {
 	}
 
 	private buildTOC(entries: TOCEntry[]): string {
+		const minLevel = Math.min(...entries.map((e) => e.level));
 		const parts: string[] = [];
 		parts.push('<div class="arcadia-doc-toc">');
-		parts.push("  <h2>Table of Contents</h2>");
-		parts.push("  <ul>");
+		parts.push("  <h2>Table of contents</h2>");
 
-		const minLevel = Math.min(...entries.map((e) => e.level));
-
+		// Build a properly nested list. Level jumps are clamped to one step
+		// at a time so the markup stays valid.
+		let html = "";
+		let prev = 0;
 		for (const entry of entries) {
-			const indent = entry.level - minLevel;
-			const padding = "    ".repeat(indent);
-			if (indent > 0) {
-				parts.push(`${padding}<ul>`);
+			const level = Math.min(entry.level - minLevel + 1, prev + 1);
+			if (prev === 0) {
+				html += "<ul>";
+			} else if (level > prev) {
+				html += "<ul>";
+			} else {
+				html += "</li>";
+				for (let i = level; i < prev; i++) {
+					html += "</ul></li>";
+				}
 			}
-			parts.push(
-				`${padding}<li><a href="#${entry.id}">${escapeHTML(entry.text)}</a></li>`
-			);
-			if (indent > 0) {
-				parts.push(`${padding}</ul>`);
-			}
+			html += `<li><a href="#${entry.id}">${escapeHTML(entry.text)}</a>`;
+			prev = level;
 		}
+		html += "</li>";
+		for (let i = 1; i < prev; i++) {
+			html += "</ul></li>";
+		}
+		html += "</ul>";
 
-		parts.push("  </ul>");
+		parts.push(`  ${html}`);
 		parts.push("</div>");
 		return parts.join("\n");
-	}
-
-	private addHeadingIDs(html: string): string {
-		let counter = 0;
-		return html.replace(
-			/<h([1-6])([^>]*)>/gi,
-			(_match, level, attrs) => {
-				const id = `heading-${counter++}`;
-				// Preserve existing attributes, add id
-				if (attrs.includes("id=")) {
-					return `<h${level}${attrs}>`;
-				}
-				return `<h${level} id="${id}"${attrs}>`;
-			}
-		);
 	}
 }

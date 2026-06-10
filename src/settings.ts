@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type ArcadiaPublisherPlugin from "./main";
-import { validateLicense } from "./license";
 
 export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 	plugin: ArcadiaPublisherPlugin;
@@ -20,10 +19,13 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.setDesc("Folder for exported files (relative to vault root)")
 			.addText((text) =>
 				text
-					.setPlaceholder("Exports")
+					.setPlaceholder("exports")
 					.setValue(this.plugin.settings.outputDir)
 					.onChange(async (value) => {
-						this.plugin.settings.outputDir = value.trim() || "exports";
+						// Accept backslash-separated paths from Windows users;
+						// vault paths always use forward slashes.
+						const cleaned = value.trim().replace(/\\/g, "/");
+						this.plugin.settings.outputDir = cleaned || "exports";
 						await this.plugin.saveSettings();
 					})
 			);
@@ -89,8 +91,8 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.setDesc("Paper size for PDF export")
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("letter", "Letter (8.5 X 11 in)")
-					.addOption("a4", "A4 (210 X 297 mm)")
+					.addOption("letter", "Letter (8.5 x 11 in)")
+					.addOption("a4", "A4 (210 x 297 mm)")
 					.setValue(this.plugin.settings.pageSize)
 					.onChange(async (value) => {
 						this.plugin.settings.pageSize = value as "letter" | "a4";
@@ -104,71 +106,13 @@ export class ArcadiaPublisherSettingTab extends PluginSettingTab {
 			.setDesc("Primary font for exported documents")
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("serif", "Serif (georgia)")
+					.addOption("serif", "Serif (Georgia)")
 					.addOption("sans", "Sans-serif (system UI)")
-					.addOption("mono", "Monospace (consolas)")
+					.addOption("mono", "Monospace (Consolas)")
 					.setValue(this.plugin.settings.fontFamily)
 					.onChange(async (value) => {
 						this.plugin.settings.fontFamily = value as "serif" | "sans" | "mono";
 						await this.plugin.saveSettings();
-					})
-			);
-
-		// Pro Section
-		new Setting(containerEl).setName("Pro license").setHeading();
-
-		const licenseStatus = this.plugin.settings.licenseStatus;
-		const isPro = this.plugin.settings.isPro && licenseStatus?.valid;
-		const statusDesc = isPro
-			? `Active${licenseStatus?.customerEmail ? ` (${licenseStatus.customerEmail})` : ""}${licenseStatus?.expiresAt ? ` - expires ${licenseStatus.expiresAt}` : ""}`
-			: "No active license. Enter your license key and click Validate.";
-
-		const licenseStatusEl = containerEl.createEl("p", {
-			text: `License status: ${statusDesc}`,
-			cls: isPro ? "mod-success" : "mod-warning",
-		});
-
-		new Setting(containerEl)
-			.setName("License key")
-			.setDesc("Enter your premium license key")
-			.addText((text) =>
-				text
-					.setPlaceholder("Xxxx-xxxx-xxxx-xxxx")
-					.setValue(this.plugin.settings.licenseKey)
-					.onChange(async (value) => {
-						this.plugin.settings.licenseKey = value.trim();
-						await this.plugin.saveSettings();
-					})
-			)
-			.addButton((btn) =>
-				btn
-					.setButtonText("Validate")
-					.setCta()
-					.onClick(async () => {
-						const key = this.plugin.settings.licenseKey.trim();
-						if (!key) return;
-						btn.setButtonText("Checking...").setDisabled(true);
-						const status = await validateLicense(key);
-						this.plugin.settings.licenseStatus = status;
-						this.plugin.settings.isPro = status.valid;
-						await this.plugin.saveSettings();
-						btn.setButtonText("Validate").setDisabled(false);
-						if (status.valid) {
-							licenseStatusEl.textContent = `License status: Active${status.customerEmail ? ` (${status.customerEmail})` : ""}`;
-							licenseStatusEl.className = "mod-success";
-						} else {
-							licenseStatusEl.textContent = "License status: invalid or expired. Check your key and try again.";
-							licenseStatusEl.className = "mod-warning";
-						}
-					})
-			);
-
-		new Setting(containerEl)
-			.addButton((btn) =>
-				btn
-					.setButtonText("Get premium")
-					.onClick(() => {
-						window.open("https://arcadia-studio.lemonsqueezy.com", "_blank");
 					})
 			);
 	}

@@ -20,7 +20,7 @@ export class ExportModal extends Modal {
 		const { contentEl } = this;
 		contentEl.addClass("arcadia-publisher-modal");
 
-		contentEl.createEl("h2", { text: "Export note" });
+		this.titleEl.setText("Export note");
 
 		// Note name display
 		contentEl.createEl("p", {
@@ -49,20 +49,20 @@ export class ExportModal extends Modal {
 			text: `Output: ${this.settings.outputDir}/`,
 		});
 		summaryEl.createEl("p", {
-			text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "letter"}`,
+			text: `Page size: ${this.settings.pageSize === "a4" ? "A4" : "Letter"}`,
 		});
 		summaryEl.createEl("p", {
 			text: `Font: ${this.settings.fontFamily}`,
 		});
 		summaryEl.createEl("p", {
-			text: `TOC: ${this.settings.includeTOC ? "Yes" : "No"}`,
+			text: `Table of contents: ${this.settings.includeTOC ? "yes" : "no"}`,
 		});
 
 		// Progress area (hidden by default)
 		const progressEl = contentEl.createDiv({
 			cls: "arcadia-publisher-modal-progress",
 		});
-		progressEl.addClass("is-hidden");
+		progressEl.addClass("arcadia-publisher-hidden");
 
 		// Export button
 		const buttonContainer = contentEl.createDiv({
@@ -84,7 +84,7 @@ export class ExportModal extends Modal {
 				this.exporting = true;
 				exportBtn.disabled = true;
 				exportBtn.textContent = "Exporting...";
-				progressEl.removeClass("is-hidden");
+				progressEl.removeClass("arcadia-publisher-hidden");
 				progressEl.textContent = `Exporting to ${this.selectedFormat.toUpperCase()}...`;
 
 				try {

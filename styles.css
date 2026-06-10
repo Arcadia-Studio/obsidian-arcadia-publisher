@@ -1,18 +1,13 @@
 /* Arcadia Publisher - Plugin Styles */
 
-/* Utility: hidden toggle */
-.is-hidden {
+/* Utility: hidden toggle (scoped name so it cannot leak into other plugins) */
+.arcadia-publisher-hidden {
 	display: none;
 }
 
 /* Export Modal */
 .arcadia-publisher-modal {
 	padding: 1rem;
-}
-
-.arcadia-publisher-modal h2 {
-	margin-top: 0;
-	margin-bottom: 0.75rem;
 }
 
 .arcadia-publisher-modal-filename {

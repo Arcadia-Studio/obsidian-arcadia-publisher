@@ -1,5 +1,4 @@
 import { TFile } from "obsidian";
-import type { LicenseStatus } from './license';
 
 export interface ArcadiaPublisherSettings {
 	outputDir: string;
@@ -9,9 +8,6 @@ export interface ArcadiaPublisherSettings {
 	includeTOC: boolean;
 	pageSize: "letter" | "a4";
 	fontFamily: "serif" | "sans" | "mono";
-	licenseKey: string;
-	licenseStatus: LicenseStatus | null;
-	isPro: boolean;
 }
 
 export const DEFAULT_SETTINGS: ArcadiaPublisherSettings = {
@@ -22,9 +18,6 @@ export const DEFAULT_SETTINGS: ArcadiaPublisherSettings = {
 	includeTOC: false,
 	pageSize: "letter",
 	fontFamily: "serif",
-	licenseKey: "",
-	licenseStatus: null,
-	isPro: false,
 };
 
 export interface ExportOptions {

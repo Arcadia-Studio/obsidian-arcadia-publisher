@@ -1,7 +1,9 @@
-import { App, TFile } from "obsidian";
+import { App, FileSystemAdapter, TFile, normalizePath } from "obsidian";
+import { pathToFileURL } from "url";
 import { ArcadiaPublisherSettings, ExportResult } from "./types";
 import { MarkdownProcessor } from "./markdown-processor";
 import { getDocumentCSS, getHTMLTemplate } from "./templates";
+import { ensureDirectory, resolveOutputDir } from "./html-exporter";
 
 /** Minimal type for Electron BrowserWindow used in PDF rendering */
 interface ElectronBrowserWindowConstructor {
@@ -10,12 +12,14 @@ interface ElectronBrowserWindowConstructor {
 
 interface ElectronBrowserWindowInstance {
 	loadURL(url: string): void;
-	close(): void;
+	destroy(): void;
 	webContents: {
 		on(event: string, listener: (...args: never[]) => void): void;
 		printToPDF(options: Record<string, unknown>): Promise<Buffer>;
 	};
 }
+
+const PDF_RENDER_TIMEOUT_MS = 45000;
 
 export class PDFExporter {
 	private app: App;
@@ -44,20 +48,17 @@ export class PDFExporter {
 			// Assemble full HTML document
 			const fullHTML = getHTMLTemplate(title, css, bodyContent);
 
-			// Determine page size for printToPDF
-			const pageWidth = this.settings.pageSize === "a4" ? 8.27 : 8.5;
-			const pageHeight = this.settings.pageSize === "a4" ? 11.69 : 11.0;
-
-			// Use Electron's BrowserWindow to render and print to PDF
-			const pdfBuffer = await this.renderToPDF(fullHTML, pageWidth, pageHeight);
+			// Render and print through a hidden Electron window
+			const pageSizeName = this.settings.pageSize === "a4" ? "A4" : "Letter";
+			const pdfBuffer = await this.renderToPDF(fullHTML, pageSizeName);
 
 			// Ensure output directory exists
-			const outputDir = this.settings.outputDir;
-			await this.ensureDirectory(outputDir);
+			const outputDir = resolveOutputDir(this.settings.outputDir);
+			await ensureDirectory(this.app, outputDir);
 
 			// Write the PDF file
 			const outputName = `${file.basename}.pdf`;
-			const outputPath = `${outputDir}/${outputName}`;
+			const outputPath = outputDir ? `${outputDir}/${outputName}` : outputName;
 
 			const existingFile = this.app.vault.getAbstractFileByPath(outputPath);
 			if (existingFile instanceof TFile) {
@@ -79,85 +80,109 @@ export class PDFExporter {
 		}
 	}
 
-	private async renderToPDF(
-		html: string,
-		pageWidthInches: number,
-		pageHeightInches: number
-	): Promise<ArrayBuffer> {
+	private async renderToPDF(html: string, pageSizeName: "A4" | "Letter"): Promise<ArrayBuffer> {
 		// Access Electron's BrowserWindow through the remote module.
 		// Electron remote is only available at runtime in Obsidian's desktop environment.
 		// eslint-disable-next-line @typescript-eslint/no-require-imports -- Electron modules must be loaded via require() at runtime in Obsidian
-		const { remote } = require("electron") as { remote: { BrowserWindow: ElectronBrowserWindowConstructor } };
-		const { BrowserWindow } = remote;
+		const electron = require("electron") as {
+			remote?: { BrowserWindow?: ElectronBrowserWindowConstructor };
+		};
+		const BrowserWindow = electron.remote?.BrowserWindow;
+		if (!BrowserWindow) {
+			throw new Error("PDF rendering is only available in the Obsidian desktop app.");
+		}
 
-		return new Promise<ArrayBuffer>((resolve, reject) => {
-			const win = new BrowserWindow({
-				show: false,
-				width: 800,
-				height: 600,
-				webPreferences: {
-					offscreen: true,
-					nodeIntegration: false,
-				},
-			});
+		const adapter = this.app.vault.adapter;
+		if (!(adapter instanceof FileSystemAdapter)) {
+			throw new Error("PDF export requires a vault stored on the local file system.");
+		}
 
-			// Load the HTML content
-			win.loadURL(
-				`data:text/html;charset=utf-8,${encodeURIComponent(html)}`
-			);
+		// Load the document from a temporary file. Chromium caps data: URLs
+		// at about 2 MB, which notes with embedded images exceed quickly.
+		const tmpPath = normalizePath(
+			`${this.app.vault.configDir}/arcadia-publisher-print.tmp.html`
+		);
+		await adapter.write(tmpPath, html);
+		const fileUrl = pathToFileURL(adapter.getFullPath(tmpPath)).toString();
 
-			win.webContents.on("did-finish-load", () => {
-				// Small delay to let CSS fully render
-				setTimeout(() => {
-					win.webContents
-						.printToPDF({
-							marginsType: 0,
-							pageSize: {
-								width: pageWidthInches * 25400, // convert inches to microns
-								height: pageHeightInches * 25400,
-							},
-							printBackground: true,
-							printSelectionOnly: false,
-						})
-						.then((data: Buffer) => {
-							win.close();
-							// Convert Buffer to ArrayBuffer
-							const arrayBuffer = data.buffer.slice(
-								data.byteOffset,
-								data.byteOffset + data.byteLength
-							);
-							resolve(arrayBuffer);
-						})
-						.catch((err: Error) => {
-							win.close();
-							reject(err);
-						});
-				}, 500);
-			});
+		try {
+			return await new Promise<ArrayBuffer>((resolve, reject) => {
+				const win = new BrowserWindow({
+					show: false,
+					width: 800,
+					height: 600,
+					webPreferences: {
+						nodeIntegration: false,
+						contextIsolation: true,
+						sandbox: true,
+					},
+				});
 
-			win.webContents.on(
-				"did-fail-load",
-				(_event: unknown, errorCode: number, errorDescription: string) => {
-					win.close();
-					reject(
-						new Error(
-							`Failed to load content for PDF rendering: ${errorDescription} (${errorCode})`
+				let settled = false;
+				const finish = (complete: () => void) => {
+					if (settled) return;
+					settled = true;
+					window.clearTimeout(timeoutId);
+					try {
+						win.destroy();
+					} catch {
+						// Window already gone
+					}
+					complete();
+				};
+
+				const timeoutId = window.setTimeout(() => {
+					finish(() =>
+						reject(
+							new Error(
+								`PDF rendering timed out after ${PDF_RENDER_TIMEOUT_MS / 1000} seconds.`
+							)
 						)
 					);
-				}
-			);
-		});
-	}
+				}, PDF_RENDER_TIMEOUT_MS);
 
-	private async ensureDirectory(path: string): Promise<void> {
-		const parts = path.split("/").filter((p) => p.length > 0);
-		let current = "";
+				win.webContents.on("did-finish-load", () => {
+					// Small delay to let CSS fully render
+					window.setTimeout(() => {
+						win.webContents
+							.printToPDF({
+								pageSize: pageSizeName,
+								printBackground: true,
+								margins: { marginType: "none" },
+								preferCSSPageSize: true,
+							})
+							.then((data: Buffer) => {
+								// Copy the Buffer into a standalone ArrayBuffer
+								const arrayBuffer = new ArrayBuffer(data.byteLength);
+								new Uint8Array(arrayBuffer).set(data);
+								finish(() => resolve(arrayBuffer));
+							})
+							.catch((err: Error) => {
+								finish(() => reject(err));
+							});
+					}, 250);
+				});
 
-		for (const part of parts) {
-			current = current ? `${current}/${part}` : part;
-			const existing = this.app.vault.getAbstractFileByPath(current);
-			if (!existing) {
-				await this.app.vault.createFolder(current);
+				win.webContents.on(
+					"did-fail-load",
+					(_event: unknown, errorCode: number, errorDescription: string) => {
+						finish(() =>
+							reject(
+								new Error(
+									`Failed to load content for PDF rendering: ${errorDescription} (${errorCode})`
+								)
+							)
+						);
+					}
+				);
+
+				win.loadURL(fileUrl);
+			});
+		} finally {
+			try {
+				await adapter.remove(tmpPath);
+			} catch {
+				// Best-effort cleanup of the temporary file
 			}
 		}
 	}

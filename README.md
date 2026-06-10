@@ -2,61 +2,78 @@
 
 ![Arcadia Publisher](docs/screenshot.png)
 
-Export Obsidian notes to PDF and HTML with professional formatting, configurable templates, and one-click output from the ribbon or command palette.
+Arcadia Publisher turns any note into a polished, shareable document. Export the active note to PDF or HTML with print-ready typography, embedded images, an optional table of contents, and a frontmatter title block, all from the ribbon or the command palette. Exports are self-contained: images are embedded directly in the output, so the file you send is the file people see.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Obsidian](https://img.shields.io/badge/Obsidian-0.16+-purple)
+![Version](https://img.shields.io/badge/version-1.0.6-blue)
+![Obsidian](https://img.shields.io/badge/Obsidian-1.3.6+-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> Desktop only.
+> Desktop only. PDF rendering uses the desktop app's built-in print engine.
 
 ## Features
 
-### Free
-- PDF export of the active note with clean print-ready formatting
-- HTML export as a self-contained file with embedded styles
-- Basic built-in templates for general documents
-- Export modal with format selection and output path control
-- Ribbon icon and dedicated commands for fast access
+- PDF export of the active note
+- HTML export (single self-contained file)
+- Embedded images (markdown and wiki-style embeds)
+- Frontmatter title block (title, author, date)
+- Table of contents with working anchor links
+- Page size (Letter or A4) and font options
+- Export modal, ribbon icon, and commands
 
-### Premium
-- Word (.docx) export for Microsoft Office and Google Docs compatibility
-- EPUB export for e-reader distribution
-- LaTeX export for academic typesetting workflows
-- Custom template editor for full control over output styling
-- Batch export of multiple notes or entire folders
-- Citation formatting in Chicago, APA, and MLA styles
-- Get Premium at [arcadia-studio.lemonsqueezy.com](https://arcadia-studio.lemonsqueezy.com)
+The plugin is free, with no account, no license key, and no time limit.
 
 ## Installation
 
-1. Open Obsidian Settings
-2. Go to Community Plugins and disable Safe Mode
-3. Click Browse and search for "Arcadia Publisher"
-4. Install and enable the plugin
+The Community Plugins listing is pending review. Until it is approved, install with one of these methods:
 
-## Manual Installation
+### Manual install (GitHub releases)
 
-1. Download the latest release from [GitHub Releases](https://github.com/Arcadia-Studio/obsidian-arcadia-publisher/releases)
-2. Extract to your vault's `.obsidian/plugins/arcadia-publisher/` folder
-3. Reload Obsidian and enable the plugin
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest release on [GitHub Releases](https://github.com/Arcadia-Studio/obsidian-arcadia-publisher/releases)
+2. Create the folder `.obsidian/plugins/arcadia-publisher/` inside your vault and copy the three files into it
+3. Reload Obsidian, then enable Arcadia Publisher under Settings > Community plugins
 
-## Usage
+### BRAT
 
-With a Markdown note open, click the ribbon icon (file-output) or run one of these commands from the command palette:
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin from Community Plugins
+2. In BRAT, choose "Add a beta plugin" and enter `Arcadia-Studio/obsidian-arcadia-publisher`
+3. Enable Arcadia Publisher under Settings > Community plugins
 
-- **Export current note to PDF** - exports directly with current settings
-- **Export current note to HTML** - exports directly with current settings
-- **Export current note...** - opens the export modal to choose format and options
+## Quick start
 
-The export modal lets you select the output format, template, and destination folder before exporting.
+1. Open the note you want to publish
+2. Click the export ribbon icon (file-output), or run "Export current note..." from the command palette
+3. Pick PDF or HTML and click Export
+4. The finished file lands in your output folder (default: `exports/` in your vault)
 
-## Premium License
+Direct commands skip the modal and use your current settings:
 
-Arcadia Publisher uses a freemium model. Core features are free. Premium features require a license key from [Lemon Squeezy](https://arcadia-studio.lemonsqueezy.com).
+- **Export current note to PDF**
+- **Export current note to HTML**
 
-To activate: Settings > Arcadia Publisher > Enter License Key
+## Settings
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| Output directory | `exports` | Vault-relative folder for exported files. Created automatically if missing. |
+| Default export format | PDF | Format used by the ribbon icon and quick commands. |
+| Author name | (empty) | Shown in the document header when the note has no `author` frontmatter field. |
+| Include frontmatter header | On | Adds a title block with title, author, and date to the top of the document. |
+| Include table of contents | Off | Generates a linked table of contents from the note's headings. |
+| Page size | Letter | Letter (8.5 x 11 in) or A4 (210 x 297 mm), used for PDF export. |
+| Font family | Serif | Serif (Georgia), sans-serif (system UI), or monospace (Consolas). |
+
+Frontmatter fields `title`, `author`, and `date` override the filename, the author setting, and the file's modified date in the exported header.
+
+The plugin makes no network requests and collects no telemetry.
+
+## Support
+
+Questions, bug reports, and feature requests: [arcadiastudio77@gmail.com](mailto:arcadiastudio77@gmail.com), or open an issue on [GitHub](https://github.com/Arcadia-Studio/obsidian-arcadia-publisher/issues).
+
+## License
+
+The plugin code is MIT licensed. See [LICENSE](LICENSE).
 
 ## About Arcadia Studio
 
-Arcadia Studio builds productivity tools for Obsidian users. [arcadia-studio.lemonsqueezy.com](https://arcadia-studio.lemonsqueezy.com)
+Arcadia Studio builds productivity tools for Obsidian users.

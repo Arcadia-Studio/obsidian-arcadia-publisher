@@ -1,7 +1,7 @@
 {
 	"id": "arcadia-publisher",
 	"name": "Arcadia Publisher",
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"minAppVersion": "1.4.0",
 	"description": "Export notes to PDF or HTML with embedded images, an optional table of contents, and a frontmatter title block.",
 	"author": "Peter J. Carter",

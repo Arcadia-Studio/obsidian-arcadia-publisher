@@ -894,14 +894,14 @@ var PDFExporter = class {
           if (settled)
             return;
           settled = true;
-          activeWindow.clearTimeout(timeoutId);
+          window.clearTimeout(timeoutId);
           try {
             win.destroy();
           } catch (e) {
           }
           complete();
         };
-        const timeoutId = activeWindow.setTimeout(() => {
+        const timeoutId = window.setTimeout(() => {
           finish(
             () => reject(
               new Error(
@@ -911,7 +911,7 @@ var PDFExporter = class {
           );
         }, PDF_RENDER_TIMEOUT_MS);
         win.webContents.on("did-finish-load", () => {
-          activeWindow.setTimeout(() => {
+          window.setTimeout(() => {
             win.webContents.printToPDF({
               pageSize: pageSizeName,
               printBackground: true,
